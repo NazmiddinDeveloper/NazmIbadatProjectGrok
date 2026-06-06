@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import PrayerLog, PRAYER_ORDER, PRAYER_CHOICES
 from .utils import get_prayer_zones, get_done_status
+from dashboard.models import Task
 
 PRAYER_API = "https://namoz-vaqti.uz/index.php?format=json&region=toshkent-shahri&period=today"
 PRAYER_LABELS = {
@@ -184,7 +185,7 @@ def toggle_prayer(request, prayer_key):
 
 @login_required
 def history(request):
-    """Tarix sahifasi — kun tanlash"""
+    """Tarix sahifasi — kun tanlash va Super Kalendar"""
     selected_date_str = request.GET.get('date', str(timezone.localdate()))
 
     try:
@@ -202,25 +203,70 @@ def history(request):
 
     prayers = build_prayers(times, None, done_set, done_at_map, status_map)
 
-    # Oxirgi 30 kunlik kalendar
+    # Oxirgi 30 kunlik Super Kalendar
     today      = timezone.localdate()
     calendar   = []
+    # Faqat 5 ta farz namozni tekshiramiz (Quyosh kirmaydi)
+    obligatory = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
+
     for i in range(29, -1, -1):
-        day   = today - timedelta(days=i)
-        count = PrayerLog.objects.filter(
-            user=request.user, date=day, is_done=True
-        ).count()
-        missed = PrayerLog.objects.filter(
-            user=request.user, date=day, is_done=False, status='missed'
-        ).count()
+        day = today - timedelta(days=i)
+        is_past_day = day < today  # Bugungi kun hali tugamagan, shuning uchun qazo hisoblamaymiz
+        
+        # 1. Namozlar statistikasi
+        day_logs = PrayerLog.objects.filter(user=request.user, date=day)
+        log_dict = {l.prayer: l.status for l in day_logs}
+        
+        is_ruined = False
+        all_prayers_perfect = True
+        prayer_dots = []
+        p_score = 0
+        
+        for p in obligatory:
+            st = log_dict.get(p, 'missed')
+            prayer_dots.append(st)
+            
+            if st == 'missed':
+                is_ruined = True
+            if st != 'on_time':
+                all_prayers_perfect = False
+                
+            # Namoz ballari
+            if st == 'on_time': p_score += 10
+            elif st == 'late': p_score += 7
+            elif st == 'qaza': p_score += 3
+            
+        p_pct = (p_score / 50) * 100
+
+        # 2. Tasklar statistikasi
+        day_tasks = Task.objects.filter(user=request.user, due_date=day)
+        total_tasks = day_tasks.count()
+        completed_tasks = day_tasks.filter(is_completed=True).count()
+        task_pct = int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 100
+        
+        all_tasks_perfect = (total_tasks > 0 and completed_tasks == total_tasks) or (total_tasks == 0)
+        
+        # 3. Umumiy samaradorlik (Namoz 50% + Task 50%)
+        efficiency = int((p_pct + task_pct) / 2)
+        
+        # 4. Status aniqlash (Jahannam yoki Firdavs)
+        day_status = 'normal'
+        if is_past_day:
+            if is_ruined:
+                day_status = 'ruined' # Jahannam effekti
+            elif all_prayers_perfect and all_tasks_perfect and p_score == 50:
+                day_status = 'perfect' # Firdavs effekti
+
         calendar.append({
-            'date':    str(day),
-            'day_num': day.day,
-            'day_name': day.strftime('%a'),
-            'count':   count,
-            'missed':  missed,
-            'pct':     int((count / 6) * 100),
-            'selected': str(day) == str(selected_date),
+            'date':        str(day),
+            'day_num':     day.day,
+            'day_name':    day.strftime('%a'),
+            'prayer_dots': prayer_dots,
+            'task_pct':    task_pct,
+            'total_tasks': total_tasks,
+            'efficiency':  efficiency,
+            'status':      day_status,
+            'selected':    str(day) == str(selected_date),
         })
 
     context = {

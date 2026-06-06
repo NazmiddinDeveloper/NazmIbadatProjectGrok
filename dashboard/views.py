@@ -63,7 +63,8 @@ def home(request):
         'today':          today,
         'times_json':     times_json,
         'prayers_mini': prayers_mini,
-        'times_json':   times_json,
+        'next_prayer':    next_prayer,  # <--- MANA SHU QATORNI QO'SHING GEMINI 3.1PRO AISTUDIO
+        
     }
     return render(request, 'dashboard/home.html', context)
 

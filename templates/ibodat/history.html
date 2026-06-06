@@ -40,31 +40,94 @@
       <div class="max-w-2xl mx-auto space-y-4">
 
         <!-- 30 KUNLIK KALENDAR -->
+        <!-- 30 KUNLIK SUPER KALENDAR -->
         <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
           <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Oxirgi 30 kun</h2>
-          <div class="flex flex-wrap gap-1.5">
+          
+          <div class="grid grid-cols-5 sm:grid-cols-7 gap-2">
             {% for day in calendar %}
             <a href="?date={{ day.date }}"
-              class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold transition relative
-              {% if day.selected %}ring-2 ring-green-500{% endif %}
-              {% if day.pct == 100 %}bg-green-500 text-white
-              {% elif day.pct >= 60 %}bg-yellow-400 text-white
-              {% elif day.pct > 0 %}bg-red-400 text-white
-              {% else %}bg-gray-100 dark:bg-gray-800 text-gray-500{% endif %}">
-              {{ day.day_num }}
-              {% if day.missed > 0 and day.pct < 100 %}
-              <span class="absolute -top-1 -right-1 text-[10px]">🔥</span>
-              {% endif %}
+               class="relative flex flex-col justify-between p-1.5 rounded-xl border transition-all aspect-square overflow-hidden
+               {% if day.selected %}ring-2 ring-green-500 scale-105 z-10{% endif %}
+               {% if day.status == 'ruined' %}
+                  bg-red-950/90 border-red-900
+               {% elif day.status == 'perfect' %}
+                  bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900/40 dark:to-yellow-600/40 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]
+               {% else %}
+                  {% if day.efficiency >= 80 %}bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800
+                  {% elif day.efficiency >= 50 %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800
+                  {% else %}bg-gray-50 dark:bg-brand-card border-gray-200 dark:border-gray-700{% endif %}
+               {% endif %}">
+               
+               <!-- 🔥 Jahannam (Ruined) -->
+               {% if day.status == 'ruined' %}
+               <div class="absolute inset-0 flex items-center justify-center opacity-40 text-3xl">🔥</div>
+               <div class="relative z-10 flex justify-between w-full">
+                  <span class="text-xs font-bold text-red-400">{{ day.day_num }}</span>
+               </div>
+               <div class="relative z-10 text-center mt-auto">
+                  <span class="text-[9px] text-red-500 font-bold uppercase tracking-wider">Kuygan</span>
+               </div>
+               
+               <!-- ✨ Firdavs (Perfect) -->
+               {% elif day.status == 'perfect' %}
+               <div class="absolute inset-0 flex items-center justify-center opacity-30 text-3xl">✨</div>
+               <div class="relative z-10 flex justify-between w-full">
+                  <span class="text-xs font-bold text-yellow-700 dark:text-yellow-400">{{ day.day_num }}</span>
+                  <span class="text-[10px]">🤲</span>
+               </div>
+               <div class="relative z-10 mt-auto">
+                  <div class="flex justify-between gap-0.5 mb-1">
+                     {% for dot in day.prayer_dots %}
+                     <div class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]"></div>
+                     {% endfor %}
+                  </div>
+                  <div class="h-1 w-full bg-yellow-200 dark:bg-yellow-900/50 rounded-full overflow-hidden">
+                     <div class="h-full bg-yellow-500 rounded-full" style="width: 100%"></div>
+                  </div>
+               </div>
+               
+               <!-- 📊 Normal -->
+               {% else %}
+               <div class="flex justify-between w-full">
+                  <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ day.day_num }}</span>
+               </div>
+               <div class="mt-auto space-y-1.5">
+                  <!-- 5 ta namoz nuqtalari -->
+                  <div class="flex justify-between gap-0.5">
+                     {% for dot in day.prayer_dots %}
+                     <div class="w-1.5 h-1.5 rounded-full 
+                        {% if dot == 'on_time' %}bg-green-500
+                        {% elif dot == 'late' %}bg-yellow-400
+                        {% elif dot == 'qaza' %}bg-red-500
+                        {% else %}bg-gray-300 dark:bg-gray-600{% endif %}">
+                     </div>
+                     {% endfor %}
+                  </div>
+                  <!-- Task progress bar -->
+                  <div class="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                     {% if day.total_tasks > 0 %}
+                     <div class="h-full rounded-full transition-all
+                        {% if day.task_pct >= 80 %}bg-green-500
+                        {% elif day.task_pct >= 50 %}bg-yellow-400
+                        {% else %}bg-red-500{% endif %}" 
+                        style="width: {{ day.task_pct }}%"></div>
+                     {% endif %}
+                  </div>
+               </div>
+               {% endif %}
             </a>
             {% endfor %}
           </div>
-          <!-- Izoh -->
-          <div class="flex items-center gap-4 mt-3">
-            <span class="flex items-center gap-1 text-[10px] text-gray-400"><span class="w-3 h-3 rounded bg-green-500 inline-block"></span> 6/6</span>
-            <span class="flex items-center gap-1 text-[10px] text-gray-400"><span class="w-3 h-3 rounded bg-yellow-400 inline-block"></span> 4-5/6</span>
-            <span class="flex items-center gap-1 text-[10px] text-gray-400"><span class="w-3 h-3 rounded bg-red-400 inline-block"></span> 1-3/6</span>
-            <span class="flex items-center gap-1 text-[10px] text-gray-400"><span class="w-3 h-3 rounded bg-gray-200 dark:bg-gray-700 inline-block"></span> 0/6</span>
-            <span class="flex items-center gap-1 text-[10px] text-gray-400">🔥 O'tkazilgan</span>
+
+          <!-- Izoh (Legend) -->
+          <div class="flex flex-wrap items-center gap-4 mt-4 bg-gray-50 dark:bg-brand-card p-3 rounded-xl border border-gray-200 dark:border-gray-800">
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">✨</span> Firdavs (100% ideal)</span>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">🔥</span> Jahannam (Qazo bor)</span>
+            <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-green-500"></span> Vaqtida</span>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Kechikib</span>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-red-500"></span> Qaza</span>
           </div>
         </div>
 
