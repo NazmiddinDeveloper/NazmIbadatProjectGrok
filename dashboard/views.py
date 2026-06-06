@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models import F
 from .models import Task, Shift
 from .forms import TaskForm
+from ibodat.views import get_prayer_data
 
 
 @login_required
@@ -28,8 +29,26 @@ def home(request):
 
     shifts = Shift.objects.filter(user=user, date__gte=today)[:3]
 
-    next_level_xp = user.level * 500
+    next_level_xp  = user.level * 500
     level_progress = int((user.xp / next_level_xp) * 100) if next_level_xp > 0 else 0
+
+    # Namoz vaqtlari — sticky bar uchun
+    # Namoz mini widget uchun
+    prayer_data  = get_prayer_data()
+    times_json   = prayer_data['today']['times'] if prayer_data else {}
+    current_key  = prayer_data['today']['current']['key'] if prayer_data else None
+    next_prayer  = prayer_data['today']['next'] if prayer_data else {}
+
+    from ibodat.models import PrayerLog, PRAYER_ORDER
+    from ibodat.utils import get_prayer_zones
+    from ibodat.views import PRAYER_LABELS, PRAYER_ICONS, build_prayers
+
+    today_logs    = PrayerLog.objects.filter(user=user, date=today)
+    done_set      = set(today_logs.filter(is_done=True).values_list('prayer', flat=True))
+    done_at_map   = {l.prayer: str(l.done_at)[:5] for l in today_logs if l.done_at}
+    status_map    = {l.prayer: l.status for l in today_logs}
+
+    prayers_mini  = build_prayers(times_json, current_key, done_set, done_at_map, status_map) if times_json else []
 
     context = {
         'form':           form,
@@ -42,6 +61,9 @@ def home(request):
         'next_level_xp':  next_level_xp,
         'xp_remaining':   next_level_xp - user.xp,
         'today':          today,
+        'times_json':     times_json,
+        'prayers_mini': prayers_mini,
+        'times_json':   times_json,
     }
     return render(request, 'dashboard/home.html', context)
 
@@ -65,7 +87,6 @@ def toggle_task(request, task_id):
             xp=F('xp') - task.xp_reward
         )
 
-    # Level yangilash
     user.refresh_from_db()
     user.level = (user.xp // 500) + 1
     user.save(update_fields=['level'])
@@ -78,6 +99,7 @@ def toggle_task(request, task_id):
 def delete_task(request, task_id):
     if request.method != 'POST':
         return redirect('home')
+
     task = get_object_or_404(Task, id=task_id, user=request.user)
     if task.is_completed:
         user = request.user
@@ -87,5 +109,6 @@ def delete_task(request, task_id):
         user.refresh_from_db()
         user.level = (user.xp // 500) + 1
         user.save(update_fields=['level'])
+
     task.delete()
     return redirect('home')

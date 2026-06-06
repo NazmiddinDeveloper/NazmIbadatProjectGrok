@@ -29,8 +29,63 @@
   </script>
 </head>
 <body class="bg-gray-50 dark:bg-brand-bg text-gray-800 dark:text-gray-200 min-h-screen">
+  <body ...>
+
+  {% if request.user.is_authenticated %}
+  <div id="sticky-prayer" class="w-full bg-white dark:bg-brand-surf border-b border-gray-200 dark:border-gray-800 px-4 py-1.5 flex items-center justify-between text-xs z-40">
+    <div class="flex items-center gap-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+      <span class="font-medium text-gray-700 dark:text-gray-300" id="sticky-name">...</span>
+      <span class="text-gray-400 dark:text-gray-500 font-mono" id="sticky-cd"></span>
+    </div>
+    <a href="{% url 'ibodat' %}" class="text-green-600 dark:text-brand-accent hover:underline font-medium">
+      Vaqtlar →
+    </a>
+  </div>
+  {% endif %}
 
   {% block content %}{% endblock %}
+<script>
+  // Sticky bar uchun — faqat authenticated bo'lsa ishlaydi
+  (function() {
+    const data = {{ times_json|default:"{}" }};
+    const order = ['bomdod','quyosh','peshin','asr','shom','xufton'];
+    const labels = {bomdod:'Bomdod',quyosh:'Quyosh',peshin:'Peshin',asr:'Asr',shom:'Shom',xufton:'Xufton'};
 
+    function toSec(t){const[h,m]=t.split(':').map(Number);return h*3600+m*60;}
+
+    function findNext(){
+      const now=new Date();
+      const cur=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+      let best=order[0];
+      let minDiff=Infinity;
+      order.forEach(k=>{
+        if(!data[k])return;
+        let diff=toSec(data[k])-cur;
+        if(diff<0)diff+=86400;
+        if(diff<minDiff){minDiff=diff;best=k;}
+      });
+      return best;
+    }
+
+    function tick(){
+      if(!Object.keys(data).length)return;
+      const key=findNext();
+      const now=new Date();
+      const cur=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+      let diff=toSec(data[key])-cur;
+      if(diff<0)diff+=86400;
+      const h=String(Math.floor(diff/3600)).padStart(2,'0');
+      const m=String(Math.floor((diff%3600)/60)).padStart(2,'0');
+      const s=String(diff%60).padStart(2,'0');
+      const nm=document.getElementById('sticky-name');
+      const cd=document.getElementById('sticky-cd');
+      if(nm)nm.textContent=labels[key];
+      if(cd)cd.textContent=`· ${h}:${m}:${s} qoldi`;
+    }
+    tick();
+    setInterval(tick,1000);
+  })();
+</script>
 </body>
 </html>

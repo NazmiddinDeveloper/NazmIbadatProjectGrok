@@ -5,7 +5,7 @@
 <div class="flex h-screen overflow-hidden">
 
   <!-- SIDEBAR -->
-  <aside class="hidden md:flex flex-col w-56 bg-white dark:bg-brand-surf border-r border-gray-200 dark:border-gray-800 px-3 py-5">
+  <aside class="hidden md:flex flex-col w-52 bg-white dark:bg-brand-surf border-r border-gray-200 dark:border-gray-800 px-3 py-5 shrink-0">
     <div class="flex items-center gap-2 px-2 mb-8">
       <div class="w-8 h-8 rounded-lg bg-green-500 dark:bg-brand-accent flex items-center justify-center text-white dark:text-black font-bold">S</div>
       <div>
@@ -15,31 +15,30 @@
     </div>
 
     <nav class="flex-1 space-y-1">
-      <a href="{% url 'home' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent text-sm font-medium">
+      <a href="{% url 'home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent text-sm font-medium">
         🏠 Bosh sahifa
       </a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-50 dark:hover:bg-brand-card">
-        🌙 Ibodat
-      </a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-50 dark:hover:bg-brand-card">
-        💼 Smenalar
-      </a>
+      <span class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 text-sm cursor-not-allowed">
+        📚 Ta'lim <span class="ml-auto text-[9px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">tez orada</span>
+      </span>
+      <span class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 text-sm cursor-not-allowed">
+        🌙 Ibodat <span class="ml-auto text-[9px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">tez orada</span>
+      </span>
+      <span class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 text-sm cursor-not-allowed">
+        💼 Smenalar <span class="ml-auto text-[9px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">tez orada</span>
+      </span>
     </nav>
 
     <div class="border-t border-gray-200 dark:border-gray-800 pt-3 space-y-1">
-      <!-- XP -->
-      <div class="px-3 py-2">
-        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-          <span>Level {{ request.user.level }}</span>
-          <span>{{ request.user.xp }} / {{ next_level_xp }} XP</span>
-        </div>
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-          <div class="bg-green-500 dark:bg-brand-accent h-1.5 rounded-full" style="width: {{ level_progress }}%"></div>
-        </div>
-      </div>
-      <a href="{% url 'logout' %}" class="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-50 dark:hover:bg-brand-card">
-        🚪 Chiqish
-      </a>
+      <button id="theme-btn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-100 dark:hover:bg-brand-card transition">
+        🌓 Tema
+      </button>
+      <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 text-sm hover:bg-gray-100 dark:hover:bg-brand-card transition">
+          🚪 Chiqish
+        </button>
+      </form>
     </div>
   </aside>
 
@@ -47,56 +46,125 @@
   <div class="flex-1 flex flex-col overflow-hidden">
 
     <!-- TOPBAR -->
-    <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-6 py-3 flex items-center justify-between">
+     <!-- TOPBAR -->
+<header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 shrink-0">
+  <div class="flex items-center justify-between">
+    <div>
+      <div class="text-base font-bold text-gray-900 dark:text-white">Assalomu alaykum, {{ request.user.username }} 👋</div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        Bugun <span class="text-green-600 dark:text-brand-accent font-semibold">{{ total }}</span> ta vazifa
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-brand-card border border-gray-200 dark:border-gray-700">
+        ⚡ <span class="font-bold text-gray-900 dark:text-white">{{ request.user.xp }}</span>
+        <span class="text-gray-400">XP</span>
+      </div>
+      <div class="text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-bold">
+        Level {{ request.user.level }}
+      </div>
+    </div>
+  </div>
+
+  <!-- NAMOZ MINI WIDGET -->
+  <div class="mt-2 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+    {% for p in prayers_mini %}
+    <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg shrink-0 border text-xs
+      {% if p.current %}
+        bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700
+      {% elif p.is_done %}
+        {% if p.status == 'on_time' %}bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900
+        {% elif p.status == 'late' %}bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900
+        {% else %}bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900{% endif %}
+      {% else %}
+        bg-gray-50 dark:bg-brand-card border-gray-200 dark:border-gray-700
+      {% endif %}">
+      <span>{{ p.icon }}</span>
+      <span class="font-medium
+        {% if p.current %}text-green-700 dark:text-green-400
+        {% elif p.is_done %}
+          {% if p.status == 'on_time' %}text-green-600 dark:text-green-500
+          {% elif p.status == 'late' %}text-yellow-600 dark:text-yellow-500
+          {% else %}text-red-500 dark:text-red-400{% endif %}
+        {% else %}text-gray-500 dark:text-gray-400{% endif %}">
+        {{ p.label }}
+      </span>
+      <span class="font-mono text-gray-400 dark:text-gray-500">{{ p.time }}</span>
+      {% if p.is_done %}
+        <span class="
+          {% if p.status == 'on_time' %}text-green-500
+          {% elif p.status == 'late' %}text-yellow-500
+          {% else %}text-red-400{% endif %}">✓</span>
+      {% elif p.current %}
+        <span class="text-green-500 animate-pulse font-mono text-[10px]" id="mini-cd"></span>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <a href="{% url 'ibodat' %}" class="shrink-0 text-[10px] text-green-600 dark:text-brand-accent hover:underline px-2">
+      Batafsil →
+    </a>
+  </div>
+</header>
+    <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
       <div>
         <div class="text-base font-bold text-gray-900 dark:text-white">Assalomu alaykum, {{ request.user.username }} 👋</div>
         <div class="text-xs text-gray-500 dark:text-gray-400">
-          Bugun — {{ today }} &nbsp;·&nbsp;
-          <span class="text-green-600 dark:text-brand-accent font-medium">{{ total|add:0 }} ta vazifa</span>
+          Bugun <span class="text-green-600 dark:text-brand-accent font-semibold">{{ total }}</span> ta vazifa
         </div>
       </div>
-      <button onclick="openModal()"
-        class="flex items-center gap-2 px-4 py-2 bg-green-500 dark:bg-brand-accent text-white dark:text-black text-sm font-bold rounded-xl hover:opacity-90 transition">
-        + Yangi vazifa
-      </button>
+      <div class="flex items-center gap-2">
+        <div class="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-brand-card border border-gray-200 dark:border-gray-700">
+          ⚡ <span class="font-bold text-gray-900 dark:text-white">{{ request.user.xp }}</span>
+          <span class="text-gray-400">XP</span>
+        </div>
+        <div class="text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-bold">
+          Level {{ request.user.level }}
+        </div>
+      </div>
     </header>
 
     <!-- CONTENT -->
-    <main class="flex-1 overflow-y-auto p-6">
-      <div class="max-w-4xl mx-auto space-y-6">
+    <main class="flex-1 overflow-y-auto p-5">
+      <div class="max-w-4xl mx-auto space-y-5">
 
         <!-- STATS -->
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-3 gap-3">
           <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 p-4">
             <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ total }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Jami vazifa</div>
+            <div class="text-xs text-gray-400 mt-0.5">Jami vazifa</div>
           </div>
           <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 p-4">
             <div class="text-2xl font-bold text-green-600 dark:text-brand-accent">{{ completed }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Bajarildi</div>
+            <div class="text-xs text-gray-400 mt-0.5">Bajarildi</div>
           </div>
           <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 p-4">
             <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ progress }}<span class="text-sm text-gray-400">%</span></div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Progress</div>
+            <div class="text-xs text-gray-400 mt-0.5">Progress</div>
+            <div class="mt-2 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-1 bg-green-500 dark:bg-brand-accent rounded-full transition-all" style="width:{{ progress }}%"></div>
+            </div>
           </div>
         </div>
 
         <!-- TASKS -->
         <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h2 class="text-sm font-bold text-gray-900 dark:text-white">Bugungi vazifalar</h2>
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+            <h2 class="font-bold text-gray-900 dark:text-white text-sm">Bugungi vazifalar</h2>
+            <button onclick="openModal()"
+              class="text-xs px-3 py-1.5 rounded-lg bg-green-500 dark:bg-brand-accent text-white dark:text-black font-bold hover:opacity-90 transition">
+              + Yangi
+            </button>
           </div>
 
-          {% if tasks %}
           <div class="divide-y divide-gray-100 dark:divide-gray-800">
             {% for task in tasks %}
-            <div class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-brand-card transition group">
+            <div class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-brand-card transition group">
 
               <!-- Toggle -->
               <form method="POST" action="{% url 'toggle_task' task.id %}">
                 {% csrf_token %}
                 <button type="submit"
-                  class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition
+                  class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition
                   {% if task.is_completed %}bg-green-500 border-green-500 text-white{% else %}border-gray-300 dark:border-gray-600 hover:border-green-500{% endif %}">
                   {% if task.is_completed %}✓{% endif %}
                 </button>
@@ -104,7 +172,7 @@
 
               <!-- Info -->
               <div class="flex-1 min-w-0">
-                <div class="text-sm text-gray-900 dark:text-gray-100 {% if task.is_completed %}line-through text-gray-400 dark:text-gray-500{% endif %}">
+                <div class="text-sm text-gray-900 dark:text-gray-100 {% if task.is_completed %}line-through text-gray-400 dark:text-gray-500{% endif %} truncate">
                   {{ task.title }}
                 </div>
                 <div class="flex items-center gap-2 mt-1">
@@ -117,7 +185,7 @@
                     {{ task.get_category_display }}
                   </span>
                   <!-- Prioritet -->
-                  <span class="w-2 h-2 rounded-full flex-shrink-0
+                  <span class="w-2 h-2 rounded-full shrink-0
                     {% if task.priority == 'high' %}bg-red-500
                     {% elif task.priority == 'medium' %}bg-yellow-500
                     {% else %}bg-green-400{% endif %}">
@@ -128,41 +196,49 @@
               </div>
 
               <!-- Delete -->
-              <form method="POST" action="{% url 'delete_task' task.id %}"
-                class="opacity-0 group-hover:opacity-100 transition">
+              <form method="POST" action="{% url 'delete_task' task.id %}">
                 {% csrf_token %}
-                <button type="submit" class="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none">×</button>
+                <button type="submit"
+                  class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition text-lg leading-none">
+                  ×
+                </button>
               </form>
 
             </div>
+            {% empty %}
+            <div class="py-12 text-center text-gray-400 dark:text-gray-600">
+              <div class="text-3xl mb-2">📭</div>
+              <div class="text-sm">Bugun uchun vazifa yo'q</div>
+              <button onclick="openModal()" class="mt-3 text-xs text-green-600 dark:text-brand-accent hover:underline">Qo'shing</button>
+            </div>
             {% endfor %}
           </div>
+        </div>
 
-          {% else %}
-          <div class="text-center py-12 text-gray-400 dark:text-gray-600">
-            <div class="text-4xl mb-2">📋</div>
-            <div class="text-sm">Bugun uchun vazifa yo'q</div>
-            <button onclick="openModal()" class="mt-3 text-xs text-green-600 dark:text-brand-accent hover:underline">+ Qo'shish</button>
+        <!-- XP PROGRESS -->
+        <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-bold text-gray-900 dark:text-white">Level {{ request.user.level }}</span>
+            <span class="text-xs text-gray-400">{{ request.user.xp }} / {{ next_level_xp }} XP</span>
           </div>
-          {% endif %}
+          <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div class="h-2 bg-green-500 dark:bg-brand-accent rounded-full transition-all duration-700" style="width:{{ level_progress }}%"></div>
+          </div>
+          <div class="text-xs text-gray-400 mt-1.5">Level {{ request.user.level|add:1 }} gacha {{ xp_remaining }} XP qoldi</div>
         </div>
 
         <!-- SHIFTS -->
         {% if shifts %}
-        <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-            <h2 class="text-sm font-bold text-gray-900 dark:text-white">Keyingi smenalar</h2>
-          </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-800">
+        <div class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+          <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Keyingi smenalar</h2>
+          <div class="grid grid-cols-3 gap-2">
             {% for shift in shifts %}
-            <div class="flex items-center justify-between px-5 py-3">
-              <span class="text-sm text-gray-700 dark:text-gray-300">{{ shift.date|date:"d M, l" }}</span>
-              <span class="text-xs font-semibold px-3 py-1 rounded-full
-                {% if shift.shift_type == 'day' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
-                {% elif shift.shift_type == 'night' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
-                {% else %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400{% endif %}">
-                {{ shift.get_shift_type_display }}
-              </span>
+            <div class="p-3 rounded-lg border-l-4 bg-gray-50 dark:bg-brand-card
+              {% if shift.shift_type == 'day' %}border-yellow-500
+              {% elif shift.shift_type == 'night' %}border-blue-500
+              {% else %}border-green-500{% endif %}">
+              <div class="text-xs text-gray-400">{{ shift.date|date:"d M" }}</div>
+              <div class="text-sm font-bold text-gray-900 dark:text-white mt-0.5">{{ shift.get_shift_type_display }}</div>
             </div>
             {% endfor %}
           </div>
@@ -175,24 +251,24 @@
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center px-4">
-  <div class="bg-white dark:bg-brand-surf w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+<div id="modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+  <div class="bg-white dark:bg-brand-surf w-full max-w-sm rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
       <h3 class="font-bold text-gray-900 dark:text-white">Yangi vazifa</h3>
-      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">×</button>
+      <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">×</button>
     </div>
-    <form method="POST" class="p-6 space-y-4">
+    <form method="POST" class="p-5 space-y-3">
       {% csrf_token %}
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Vazifa nomi</label>
-        <input type="text" name="title" required placeholder="Nima qilamiz?"
-          class="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
+        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Vazifa nomi</label>
+        <input type="text" name="title" required placeholder="Nima qilasiz?"
+          class="w-full px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Kategoriya</label>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Kategoriya</label>
           <select name="category"
-            class="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
+            class="w-full px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
             <option value="school21">School 21</option>
             <option value="english">Ingliz tili</option>
             <option value="uzum">Uzum</option>
@@ -200,9 +276,9 @@
           </select>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Prioritet</label>
+          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Prioritet</label>
           <select name="priority"
-            class="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
+            class="w-full px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
             <option value="high">🔴 Yuqori</option>
             <option value="medium" selected>🟡 O'rta</option>
             <option value="low">🟢 Past</option>
@@ -210,17 +286,17 @@
         </div>
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sana</label>
-        <input type="date" name="due_date" value="{{ today }}"
-          class="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
+        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Sana</label>
+        <input type="date" name="due_date" value="{{ today|date:'Y-m-d' }}"
+          class="w-full px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-brand-accent">
       </div>
-      <div class="flex gap-3 pt-2">
+      <div class="flex gap-2 pt-1">
         <button type="button" onclick="closeModal()"
-          class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-brand-card">
+          class="flex-1 py-2.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition">
           Bekor
         </button>
         <button type="submit"
-          class="flex-1 py-2.5 rounded-xl bg-green-500 dark:bg-brand-accent text-white dark:text-black text-sm font-bold hover:opacity-90">
+          class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white dark:text-black bg-green-500 dark:bg-brand-accent hover:opacity-90 transition">
           Qo'shish
         </button>
       </div>
@@ -229,17 +305,35 @@
 </div>
 
 <script>
-  function openModal() {
-    document.getElementById('modal').classList.remove('hidden');
-  }
-  function closeModal() {
-    document.getElementById('modal').classList.add('hidden');
-  }
-  document.getElementById('modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
+  // Modal
+  const modal = document.getElementById('modal');
+  function openModal()  { modal.classList.remove('hidden'); }
+  function closeModal() { modal.classList.add('hidden'); }
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // Tema
+  document.getElementById('theme-btn').addEventListener('click', () => {
+    const html = document.documentElement;
+    html.classList.toggle('dark');
+    localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
   });
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
-  });
+  // Namoz mini countdown
+  const nextPTime = "{{ next_prayer.time|default:'' }}";
+  function tickMini() {
+    const el = document.getElementById('mini-cd');
+    if (!el || !nextPTime) return;
+    const now = new Date();
+    const cur = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const [th, tm] = nextPTime.split(':').map(Number);
+    let diff = th * 3600 + tm * 60 - cur;
+    if (diff < 0) diff += 86400;
+    const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+    const s = String(diff % 60).padStart(2, '0');
+    el.textContent = `${h}:${m}:${s}`;
+  }
+  tickMini();
+  setInterval(tickMini, 1000);
 </script>
 {% endblock %}

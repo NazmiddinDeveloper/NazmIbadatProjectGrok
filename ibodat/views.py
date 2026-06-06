@@ -1,0 +1,232 @@
+import requests
+from datetime import datetime, timedelta
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from .models import PrayerLog, PRAYER_ORDER, PRAYER_CHOICES
+from .utils import get_prayer_zones, get_done_status
+
+PRAYER_API = "https://namoz-vaqti.uz/index.php?format=json&region=toshkent-shahri&period=today"
+PRAYER_LABELS = {
+    'bomdod': 'Bomdod', 'quyosh': 'Quyosh', 'peshin': 'Peshin',
+    'asr': 'Asr', 'shom': 'Shom', 'xufton': 'Xufton'
+}
+PRAYER_ICONS = {
+    'bomdod': '🌙', 'quyosh': '🌅', 'peshin': '☀️',
+    'asr': '🌤', 'shom': '🌆', 'xufton': '🌃'
+}
+
+
+def get_prayer_data():
+    try:
+        r = requests.get(PRAYER_API, timeout=5)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
+
+def build_prayers(times, current_key, done_set, done_at_map, status_map):
+    """
+    Har bir namoz uchun to'liq ma'lumot dict qaytaradi
+    times: {'bomdod':'03:07', ...}
+    """
+    prayer_keys = PRAYER_ORDER
+    result = []
+
+    for i, key in enumerate(prayer_keys):
+        start = times.get(key, '00:00')
+        # end — keyingi namoz vaqti
+        end = times.get(prayer_keys[i + 1], '23:59') if i + 1 < len(prayer_keys) else '23:59'
+
+        zones  = get_prayer_zones(start, end)
+        is_done = key in done_set
+        status  = status_map.get(key, 'missed')
+        done_at = done_at_map.get(key)
+
+        # Hozirgi vaqtga qarab zone rangi
+        now_str = datetime.now().strftime('%H:%M')
+        zone_color = 'green'
+        if key == current_key:
+            fmt = "%H:%M"
+            now_dt    = datetime.strptime(now_str, fmt)
+            green_end = datetime.strptime(zones['green']['to'], fmt)
+            yellow_end = datetime.strptime(zones['yellow']['to'], fmt)
+            if now_dt > yellow_end:
+                zone_color = 'red'
+            elif now_dt > green_end:
+                zone_color = 'yellow'
+            else:
+                zone_color = 'green'
+
+        result.append({
+            'key':        key,
+            'label':      PRAYER_LABELS[key],
+            'icon':       PRAYER_ICONS[key],
+            'time':       start,
+            'end':        end,
+            'zones':      zones,
+            'is_done':    is_done,
+            'done_at':    done_at,
+            'status':     status,
+            'current':    key == current_key,
+            'zone_color': zone_color,
+        })
+
+    return result
+
+
+@login_required
+def ibodat(request):
+    today = timezone.localdate()
+    data  = get_prayer_data()
+
+    times      = {}
+    current    = {}
+    next_p     = {}
+
+    if data:
+        times   = data['today']['times']
+        current = data['today']['current']
+        next_p  = data['today']['next']
+
+    # Foydalanuvchi loglari
+    logs       = PrayerLog.objects.filter(user=request.user, date=today)
+    done_set   = set(logs.filter(is_done=True).values_list('prayer', flat=True))
+    done_at_map = {l.prayer: str(l.done_at)[:5] for l in logs if l.done_at}
+    status_map  = {l.prayer: l.status for l in logs}
+
+    prayers = build_prayers(
+        times, current.get('key'), done_set, done_at_map, status_map
+    )
+
+    # Streak hisoblash
+    streak = 0
+    check_date = today - timedelta(days=1)
+    while True:
+        day_logs = PrayerLog.objects.filter(
+            user=request.user, date=check_date, is_done=True
+        )
+        # Kamida 5 namoz o'qilgan kun — streak kun
+        if day_logs.count() >= 5:
+            streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+
+    # Haftalik statistika
+    week_start = today - timedelta(days=6)
+    week_data  = []
+    for i in range(7):
+        day = week_start + timedelta(days=i)
+        count = PrayerLog.objects.filter(
+            user=request.user, date=day, is_done=True
+        ).count()
+        week_data.append({
+            'day':   day.strftime('%a'),
+            'date':  str(day),
+            'count': count,
+            'pct':   int((count / 6) * 100),
+        })
+
+    # Bugungi bajarilganlar soni
+    done_today = len(done_set)
+
+    context = {
+        'prayers':    prayers,
+        'current':    current,
+        'next_p':     next_p,
+        'today':      today,
+        'times_json': times,
+        'streak':     streak,
+        'week_data':  week_data,
+        'done_today': done_today,
+    }
+    return render(request, 'ibodat/ibodat.html', context)
+
+
+@login_required
+def toggle_prayer(request, prayer_key):
+    if request.method != 'POST':
+        return redirect('ibodat')
+
+    today  = timezone.localdate()
+    now    = timezone.localtime().strftime('%H:%M')
+    data   = get_prayer_data()
+    times  = data['today']['times'] if data else {}
+
+    log, _ = PrayerLog.objects.get_or_create(
+        user=request.user, date=today, prayer=prayer_key
+    )
+
+    if not log.is_done:
+        # Bajarildi — vaqt va status aniqlanadi
+        prayer_keys = PRAYER_ORDER
+        idx = prayer_keys.index(prayer_key)
+        start = times.get(prayer_key, '00:00')
+        end   = times.get(prayer_keys[idx + 1], '23:59') if idx + 1 < len(prayer_keys) else '23:59'
+
+        zones  = get_prayer_zones(start, end)
+        status = get_done_status(now, zones)
+
+        log.is_done = True
+        log.done_at = now
+        log.status  = status
+    else:
+        # Bekor qilindi
+        log.is_done = False
+        log.done_at = None
+        log.status  = 'missed'
+
+    log.save()
+    return redirect('ibodat')
+
+
+@login_required
+def history(request):
+    """Tarix sahifasi — kun tanlash"""
+    selected_date_str = request.GET.get('date', str(timezone.localdate()))
+
+    try:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        selected_date = timezone.localdate()
+
+    data  = get_prayer_data()
+    times = data['today']['times'] if data else {}
+
+    logs       = PrayerLog.objects.filter(user=request.user, date=selected_date)
+    done_set   = set(logs.filter(is_done=True).values_list('prayer', flat=True))
+    done_at_map = {l.prayer: str(l.done_at)[:5] for l in logs if l.done_at}
+    status_map  = {l.prayer: l.status for l in logs}
+
+    prayers = build_prayers(times, None, done_set, done_at_map, status_map)
+
+    # Oxirgi 30 kunlik kalendar
+    today      = timezone.localdate()
+    calendar   = []
+    for i in range(29, -1, -1):
+        day   = today - timedelta(days=i)
+        count = PrayerLog.objects.filter(
+            user=request.user, date=day, is_done=True
+        ).count()
+        missed = PrayerLog.objects.filter(
+            user=request.user, date=day, is_done=False, status='missed'
+        ).count()
+        calendar.append({
+            'date':    str(day),
+            'day_num': day.day,
+            'day_name': day.strftime('%a'),
+            'count':   count,
+            'missed':  missed,
+            'pct':     int((count / 6) * 100),
+            'selected': str(day) == str(selected_date),
+        })
+
+    context = {
+        'prayers':       prayers,
+        'selected_date': selected_date,
+        'calendar':      calendar,
+        'times_json':    times,
+    }
+    return render(request, 'ibodat/history.html', context)
