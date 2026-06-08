@@ -8,4 +8,5 @@ class PrayerTimeAdmin(admin.ModelAdmin):
 
 @admin.register(PrayerLog)
 class PrayerLogAdmin(admin.ModelAdmin):
-    list_display = ['user', 'date', 'prayer', 'is_done']
+    list_display = ['user', 'date', 'prayer', 'is_done', 'status', 'done_at']
+    list_filter  = ['prayer', 'status', 'is_done']   
