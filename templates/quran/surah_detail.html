@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}{{ surah.englishName }} - Qur'on{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col overflow-hidden">
+  
+  <!-- TOPBAR -->
+  <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'quran_home' %}" class="p-2 rounded-lg bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition">←</a>
+      <div>
+        <div class="text-base font-bold text-gray-900 dark:text-white">{{ surah.englishName }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">{{ surah.englishNameTranslation }}</div>
+      </div>
+    </div>
+    <div class="text-2xl font-bold text-green-600 dark:text-brand-accent" dir="rtl">{{ surah.name }}</div>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-5">
+    <div class="max-w-3xl mx-auto space-y-4">
+      
+      <!-- Bismillah -->
+      {% if surah.number != 1 and surah.number != 9 %}
+      <div class="text-center py-6 text-2xl font-bold text-gray-900 dark:text-white" dir="rtl">
+        بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+      </div>
+      {% endif %}
+
+      <!-- OYATLAR RO'YXATI -->
+      <div class="space-y-3">
+        {% for ayah in ayahs %}
+        <div class="p-5 rounded-2xl border transition-all
+          {% if ayah.is_memorized %}bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900
+          {% else %}bg-white dark:bg-brand-surf border-gray-200 dark:border-gray-800{% endif %}">
+          
+          <div class="flex justify-between items-start gap-4">
+            <!-- Chap tomon: Raqam va Tugma -->
+            <div class="flex flex-col items-center gap-3 shrink-0">
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                {% if ayah.is_memorized %}bg-green-500 text-white
+                {% else %}bg-gray-100 dark:bg-brand-card text-gray-500{% endif %}">
+                {{ ayah.number }}
+              </div>
+              
+              <a href="{% url 'memorize_ayah' surah.number ayah.number %}" 
+                 class="text-[10px] font-bold px-3 py-1.5 rounded-lg transition
+                 {% if ayah.is_memorized %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                 {% else %}bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 hover:bg-green-500 hover:text-white{% endif %}">
+                Yodlash
+              </a>
+            </div>
+
+            <!-- O'ng tomon: Arabcha matn -->
+            <div class="flex-1 text-right">
+              <p class="text-3xl leading-[2.5] text-gray-900 dark:text-white font-quran" dir="rtl">
+                {{ ayah.text }}
+              </p>
+              {% if ayah.repeats > 0 %}
+              <div class="mt-3 text-[10px] text-gray-400 flex items-center justify-end gap-1">
+                <span>🔄 {{ ayah.repeats }} marta takrorlandi</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </main>
+</div>
+{% endblock %}

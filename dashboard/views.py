@@ -5,7 +5,8 @@ from django.db.models import F
 from .models import Task, Shift
 from .forms import TaskForm
 from ibodat.views import get_prayer_data
-
+import calendar
+from datetime import date, timedelta
 
 @login_required
 def home(request):
@@ -64,7 +65,6 @@ def home(request):
         'times_json':     times_json,
         'prayers_mini': prayers_mini,
         'next_prayer':    next_prayer,  # <--- MANA SHU QATORNI QO'SHING GEMINI 3.1PRO AISTUDIO
-        
     }
     return render(request, 'dashboard/home.html', context)
 
@@ -113,3 +113,80 @@ def delete_task(request, task_id):
 
     task.delete()
     return redirect('home')
+
+
+@login_required
+def smenalar(request):
+    today = timezone.localdate()
+
+    if request.method == 'POST':
+        shift_date = request.POST.get('date')
+        shift_type = request.POST.get('shift_type')
+        
+        if shift_date:
+            if shift_type == 'delete':
+                Shift.objects.filter(user=request.user, date=shift_date).delete()
+            elif shift_type in dict(Shift.SHIFT_TYPES).keys():
+                Shift.objects.update_or_create(
+                    user=request.user, 
+                    date=shift_date,
+                    defaults={'shift_type': shift_type}
+                )
+        
+        # URL dagi bo'sh parametrlarni oldini olish (Redirect qilish)
+        y = request.GET.get('year')
+        m = request.GET.get('month')
+        if y and m:
+            return redirect(f"{request.path}?year={y}&month={m}")
+        return redirect(request.path)
+
+    # GET parametrlarini xavfsiz o'qish (bo'sh yoki matn bo'lsa xato bermaydi)
+    y_str = request.GET.get('year')
+    m_str = request.GET.get('month')
+    
+    try:
+        year  = int(y_str) if y_str else today.year
+        month = int(m_str) if m_str else today.month
+    except ValueError:
+        year  = today.year
+        month = today.month
+
+    # Kalendar yasash (Dushanbadan boshlanadi)
+    cal = calendar.Calendar(firstweekday=0)
+    month_days = cal.monthdatescalendar(year, month)
+
+    # Shu oydagi smenalarni bazadan olish
+    start_date = month_days[0][0]
+    end_date   = month_days[-1][-1]
+    shifts = Shift.objects.filter(user=request.user, date__range=[start_date, end_date])
+    shift_dict = {str(s.date): s.shift_type for s in shifts}
+
+    cal_data = []
+    for week in month_days:
+        week_data = []
+        for d in week:
+            week_data.append({
+                'date': str(d),
+                'day': d.day,
+                'is_current_month': d.month == month,
+                'is_today': d == today,
+                'shift': shift_dict.get(str(d))
+            })
+        cal_data.append(week_data)
+
+    uz_months = {1:"Yanvar", 2:"Fevral", 3:"Mart", 4:"Aprel", 5:"May", 6:"Iyun", 
+                 7:"Iyul", 8:"Avgust", 9:"Sentabr", 10:"Oktabr", 11:"Noyabr", 12:"Dekabr"}
+
+    prev_month = month - 1 if month > 1 else 12
+    prev_year  = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year  = year if month < 12 else year + 1
+
+    context = {
+        'calendar':   cal_data,
+        'month_name': uz_months[month],
+        'year':       year,
+        'prev_month': prev_month, 'prev_year': prev_year,
+        'next_month': next_month, 'next_year': next_year,
+    }
+    return render(request, 'dashboard/smenalar.html', context)

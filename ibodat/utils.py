@@ -29,9 +29,6 @@ def get_prayer_zones(start_str, end_str):
 
 
 def get_done_status(done_at_str, zones):
-    """
-    Bajarilgan vaqtga qarab status qaytaradi
-    """
     if not done_at_str:
         return 'missed'
 
@@ -39,10 +36,13 @@ def get_done_status(done_at_str, zones):
     done = datetime.strptime(done_at_str[:5], fmt)
     g_end = datetime.strptime(zones['green']['to'],  fmt)
     y_end = datetime.strptime(zones['yellow']['to'], fmt)
+    r_end = datetime.strptime(zones['red']['to'], fmt)
 
     if done <= g_end:
         return 'on_time'
     elif done <= y_end:
         return 'late'
+    elif done <= r_end:
+        return 'makruh'
     else:
         return 'qaza'

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Smenalar{% endblock %}
+
+{% block content %}
+<div class="flex h-screen overflow-hidden">
+
+  <!-- SIDEBAR -->
+
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
+      <div>
+        <div class="text-base font-bold text-gray-900 dark:text-white">💼 Ish jadvali</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">Smenalarni rejalashtiring</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}" class="p-2 rounded-lg bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition">←</a>
+        <div class="font-bold text-gray-900 dark:text-white w-32 text-center">{{ month_name }} {{ year }}</div>
+        <a href="?year={{ next_year }}&month={{ next_month }}" class="p-2 rounded-lg bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition">→</a>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-5">
+      <div class="max-w-4xl mx-auto">
+        
+        <!-- Hafta kunlari -->
+        <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Du</div>
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Se</div>
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Ch</div>
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Pa</div>
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Ju</div>
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Sh</div>
+          <div class="text-center text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wider py-1">Ya</div>
+        </div>
+
+        <!-- Kalendar Grid -->
+        <div class="grid grid-cols-7 gap-1 sm:gap-2">
+          {% for week in calendar %}
+            {% for day in week %}
+            <button onclick="openShiftModal('{{ day.date }}', '{{ day.day }} {{ month_name }}')"
+              class="relative flex flex-col p-1 sm:p-2 h-16 sm:h-24 rounded-lg sm:rounded-xl border transition-all text-left hover:ring-2 hover:ring-green-500
+              {% if not day.is_current_month %}opacity-40 bg-gray-50 dark:bg-brand-bg border-transparent
+              {% elif day.is_today %}ring-2 ring-green-500 bg-white dark:bg-brand-surf border-gray-200 dark:border-gray-700
+              {% else %}bg-white dark:bg-brand-surf border-gray-200 dark:border-gray-800{% endif %}">
+              
+              <span class="text-xs sm:text-sm font-bold {% if day.is_today %}text-green-600 dark:text-brand-accent{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+                {{ day.day }}
+              </span>
+
+              {% if day.shift %}
+              <div class="mt-auto w-full py-1 sm:py-1.5 px-1 sm:px-2 rounded sm:rounded-lg text-[10px] sm:text-xs font-bold text-center flex items-center justify-center
+                {% if day.shift == 'day' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+                {% elif day.shift == 'night' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                {% elif day.shift == 'off' %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400{% endif %}">
+                
+                <!-- Telefonda faqat stiker ko'rinadi -->
+                <span class="sm:hidden text-sm">
+                  {% if day.shift == 'day' %}☀️
+                  {% elif day.shift == 'night' %}🌙
+                  {% elif day.shift == 'off' %}🌴{% endif %}
+                </span>
+                
+                <!-- Kompyuterda to'liq yozuv ko'rinadi -->
+                <span class="hidden sm:inline">
+                  {% if day.shift == 'day' %}☀️ Kunduzgi
+                  {% elif day.shift == 'night' %}🌙 Tungi
+                  {% elif day.shift == 'off' %}🌴 Dam olish{% endif %}
+                </span>
+              </div>
+              {% endif %}
+            </button>
+            {% endfor %}
+          {% endfor %}
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- SHIFT MODAL -->
+<div id="shift-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
+  <div class="bg-white dark:bg-brand-surf w-full max-w-sm rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+      <h3 class="font-bold text-gray-900 dark:text-white text-lg" id="modal-date-title">Sana</h3>
+      <button onclick="closeShiftModal()" class="text-gray-400 hover:text-gray-600 text-xl">×</button>
+    </div>
+    <form method="POST" class="p-4 space-y-2">
+      {% csrf_token %}
+      <input type="hidden" name="date" id="modal-date-input">
+      
+      <button type="submit" name="shift_type" value="day" class="w-full p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 font-bold hover:bg-yellow-100 transition text-left flex items-center gap-3">
+        ☀️ Kunduzgi smena
+      </button>
+      <button type="submit" name="shift_type" value="night" class="w-full p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold hover:bg-blue-100 transition text-left flex items-center gap-3">
+        🌙 Tungi smena
+      </button>
+      <button type="submit" name="shift_type" value="off" class="w-full p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-bold hover:bg-green-100 transition text-left flex items-center gap-3">
+        🌴 Dam olish kuni
+      </button>
+      <div class="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
+      <button type="submit" name="shift_type" value="delete" class="w-full p-3 rounded-xl text-red-500 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition text-center">
+        🗑 Tozalash
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openShiftModal(dateStr, displayDate) {
+    document.getElementById('modal-date-input').value = dateStr;
+    document.getElementById('modal-date-title').textContent = displayDate;
+    document.getElementById('shift-modal').classList.remove('hidden');
+  }
+  function closeShiftModal() {
+    document.getElementById('shift-modal').classList.add('hidden');
+  }
+  document.getElementById('theme-btn').addEventListener('click', () => {
+    const html = document.documentElement;
+    html.classList.toggle('dark');
+    localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+  });
+</script>
+{% endblock %}

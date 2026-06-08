@@ -5,14 +5,13 @@ from django.utils import timezone
 
 PRAYER_CHOICES = (
     ('bomdod', 'Bomdod'),
-    ('quyosh', 'Quyosh'),
     ('peshin', 'Peshin'),
     ('asr',    'Asr'),
     ('shom',   'Shom'),
     ('xufton', 'Xufton'),
 )
 
-PRAYER_ORDER = ['bomdod', 'quyosh', 'peshin', 'asr', 'shom', 'xufton']
+PRAYER_ORDER = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
 
 
 class PrayerTime(models.Model):
@@ -30,10 +29,11 @@ class PrayerTime(models.Model):
 
 class PrayerLog(models.Model):
     STATUS_CHOICES = (
-        ('on_time', 'Vaqtida'),   # yashil zone
-        ('late',    'Kechikib'),  # sariq zone
-        ('qaza',    'Qaza'),      # qizil zone o'tib ketgan
-        ('missed',  'O\'tkazib'), # umuman o'qilmagan
+        ('on_time', 'Boshida'),   # Yashil
+        ('late',    'O\'rtasida'), # Sariq
+        ('makruh',  'Oxirida'),   # Qizil (Qazo emas!)
+        ('qaza',    'Qazo'),      # Qora (Vaqti o'tib ketgan)
+        ('missed',  'O\'tkazib'), # O'qilmagan
     )
 
     user       = models.ForeignKey(

@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SA'Y{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
+  <style>
+    .font-quran { font-family: 'Amiri Quran', serif; }
+  </style>
   <script>
     if (localStorage.getItem('theme') === 'light') {
       document.documentElement.classList.remove('dark');
@@ -29,8 +33,6 @@
   </script>
 </head>
 <body class="bg-gray-50 dark:bg-brand-bg text-gray-800 dark:text-gray-200 min-h-screen">
-  <body ...>
-
   {% if request.user.is_authenticated %}
   <div id="sticky-prayer" class="w-full bg-white dark:bg-brand-surf border-b border-gray-200 dark:border-gray-800 px-4 py-1.5 flex items-center justify-between text-xs z-40">
     <div class="flex items-center gap-2">
@@ -44,13 +46,111 @@
   </div>
   {% endif %}
 
-  {% block content %}{% endblock %}
+  <div class="flex flex-1 overflow-hidden">
+  <aside class="hidden md:flex flex-col w-52 bg-white dark:bg-brand-surf border-r border-gray-200 dark:border-gray-800 px-3 py-5 shrink-0">
+
+  <div class="flex items-center gap-2 px-2 mb-8">
+    <div class="w-8 h-8 rounded-lg bg-green-500 dark:bg-brand-accent flex items-center justify-center text-white dark:text-black font-bold">
+      S
+    </div>
+    <div>
+      <div class="text-sm font-bold text-gray-900 dark:text-white">
+        SA'Y
+      </div>
+      <div class="text-[10px] text-gray-400 tracking-widest">
+        BUILD EVERY DAY
+      </div>
+    </div>
+  </div>
+
+  {% url 'home' as url_home %}
+  {% url 'ibodat' as url_ibodat %}
+  {% url 'prayer_history' as url_prayer_history %}
+  {% url 'smenalar' as url_smenalar %}
+  {% url 'quran_home' as url_quran %}
+
+
+  <nav class="flex-1 space-y-1">
+
+    <a href="{{ url_home }}"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+       {% if request.path == url_home %}
+         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
+       {% else %}
+         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
+       {% endif %}">
+      🏠 Bosh sahifa
+    </a>
+    <a href="{{ url_quran }}"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+       {% if request.path == url_quran %}
+         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
+       {% else %}
+         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
+       {% endif %}">
+      📖 Qur'on
+    </a>
+    <a href="{{ url_ibodat }}"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+       {% if request.path == url_ibodat %}
+         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
+       {% else %}
+         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
+       {% endif %}">
+      🌙 Ibodat
+    </a>
+
+    <a href="{{ url_prayer_history }}"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+       {% if request.path == url_prayer_history %}
+         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
+       {% else %}
+         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
+       {% endif %}">
+      📅 Tarix
+    </a>
+
+    <a href="{{ url_smenalar }}"
+       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+       {% if request.path == url_smenalar %}
+         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
+       {% else %}
+         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
+       {% endif %}">
+      💼 Smenalar
+    </a>
+
+  </nav>
+
+  <div class="border-t border-gray-200 dark:border-gray-800 pt-3 space-y-1">
+
+    <button id="theme-btn"
+            class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card">
+      🌓 Tema
+    </button>
+
+    <form method="POST" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit"
+              class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card">
+        🚪 Chiqish
+      </button>
+    </form>
+
+  </div>
+
+</aside>
+<div class="flex-1 overflow-hidden">
+    {% block content %}{% endblock %}
+</div>
+</div>
+
 <script>
   // Sticky bar uchun — faqat authenticated bo'lsa ishlaydi
   (function() {
     const data = {{ times_json|default:"{}" }};
-    const order = ['bomdod','quyosh','peshin','asr','shom','xufton'];
-    const labels = {bomdod:'Bomdod',quyosh:'Quyosh',peshin:'Peshin',asr:'Asr',shom:'Shom',xufton:'Xufton'};
+    const order = ['bomdod','peshin','asr','shom','xufton'];
+    const labels = {bomdod:'Bomdod',peshin:'Peshin',asr:'Asr',shom:'Shom',xufton:'Xufton'};
 
     function toSec(t){const[h,m]=t.split(':').map(Number);return h*3600+m*60;}
 
