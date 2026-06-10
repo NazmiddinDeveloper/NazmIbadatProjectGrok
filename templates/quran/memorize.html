@@ -27,156 +27,93 @@
     </div>
   </header>
 
-  <main class="flex-1 overflow-y-auto p-4">
+<main class="flex-1 overflow-y-auto p-4 pb-24 md:pb-5">
     <div class="max-w-2xl mx-auto space-y-4">
 
-      <!-- OYAT MATNI yoki RASM -->
-      <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-
+      <!-- OYAT MATNI VA RASM -->
+      <div class="bg-white dark:bg-brand-surf rounded-3xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+        
         {% if obj.mushaf_image %}
-        <!-- Rasm ko'rinishi -->
-        <div id="image-view" class="relative">
-          <img src="{{ obj.mushaf_image.url }}" alt="Mushaf"
-            class="w-full object-contain max-h-64 rounded-t-2xl">
-          <button onclick="removeImage()"
-            class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white text-sm flex items-center justify-center hover:bg-red-500 transition">
-            ×
-          </button>
+        <!-- Katta Rasm -->
+        <div class="relative bg-gray-100 dark:bg-[#050b14] p-2">
+          <img src="{{ obj.mushaf_image.url }}" alt="Mushaf" class="w-full object-contain max-h-96 rounded-2xl">
+          <button onclick="removeImage()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-500 transition backdrop-blur-sm">×</button>
         </div>
         {% endif %}
 
-        <!-- Arabcha matn -->
-        <div id="text-view" class="p-6 {% if obj.mushaf_image %}border-t border-gray-100 dark:border-gray-800{% endif %}">
-          <!-- Zoom tugmalari -->
-          <div class="flex justify-end gap-2 mb-3">
-            <button onclick="changeSize(-1)"
-              class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-sm font-bold hover:bg-gray-200 transition">A-</button>
-            <button onclick="changeSize(1)"
-              class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-sm font-bold hover:bg-gray-200 transition">A+</button>
+        <div class="p-6">
+          <div class="flex justify-end gap-2 mb-4">
+            <button onclick="changeSize(-1)" class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 transition">A-</button>
+            <button onclick="changeSize(1)" class="w-8 h-8 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 transition">A+</button>
           </div>
-          <p id="ayah-text" class="font-quran text-gray-900 dark:text-white text-right leading-[2.5]"
-            dir="rtl" style="font-size: 2rem;">
+          <p id="ayah-text" class="font-quran text-gray-900 dark:text-white text-right leading-[2.5]" dir="rtl" style="font-size: 2.2rem;">
             {{ text_colored }}
           </p>
+        </div>
+      </div>
 
-          <!-- Tajvid izoh -->
-          <div class="flex items-center justify-center gap-4 mt-5 flex-wrap" id="tajvid-legend">
-            <span class="flex items-center gap-1 text-[10px]"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Qalqala</span>
-            <span class="flex items-center gap-1 text-[10px]"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Madd</span>
-            <span class="flex items-center gap-1 text-[10px]"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> Ghunna</span>
-          </div>
+      <!-- AUDIO VA QORI TANLASH -->
+      <div class="bg-white dark:bg-brand-surf rounded-3xl border border-gray-200 dark:border-gray-800 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm font-bold text-gray-900 dark:text-white">🎵 Qiroat</div>
+          <select id="qori-select" onchange="changeQori()" class="bg-gray-100 dark:bg-brand-card border-none rounded-xl px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer outline-none">
+            <option value="alafasy">Mishary Alafasy</option>
+            <option value="muaiqly">Maher Al-Muaiqly</option>
+            {% if obj.custom_audio %}
+            <option value="custom">🎧 {{ obj.custom_audio_title }}</option>
+            {% endif %}
+          </select>
+        </div>
+        
+        <!-- Dark mode moslashgan pleyer -->
+        <div class="rounded-xl overflow-hidden" style="color-scheme: dark;">
+          <audio id="audio-player" controls class="w-full h-12 outline-none">
+            <source src="{{ audio_url }}" type="audio/mpeg">
+          </audio>
         </div>
 
-        <!-- Rasm yuklash -->
-        <div class="px-6 pb-5">
-          <label class="flex items-center gap-2 text-xs text-gray-400 hover:text-green-600 dark:hover:text-brand-accent cursor-pointer transition">
-            <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="uploadImage(this)">
-            <span class="w-7 h-7 rounded-lg bg-gray-100 dark:bg-brand-card flex items-center justify-center">📷</span>
-            Mushaf rasmini yuklash
+        <!-- Shaxsiy audio yuklash -->
+        <form method="POST" enctype="multipart/form-data" class="mt-4 flex items-center gap-2 border-t border-gray-100 dark:border-gray-800 pt-4">
+          {% csrf_token %}
+          <input type="text" name="audio_title" placeholder="Ovoz nomi (masalan: Ustozim)" class="flex-1 bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white">
+          <label class="shrink-0 cursor-pointer bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition px-3 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300">
+            <input type="file" name="custom_audio" accept="audio/*" class="hidden" onchange="this.form.submit()">
+            + Audio yuklash
           </label>
-          <div id="upload-status" class="text-xs mt-1 hidden"></div>
-        </div>
+        </form>
       </div>
 
-      <!-- AUDIO PLAYER -->
-      <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">🎵 Qori ovozi</div>
-        <div class="grid grid-cols-2 gap-2 mb-3">
-          <button onclick="loadAudio('alafasy')"
-            class="audio-btn py-2 px-3 rounded-xl border text-xs font-medium transition
-            bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-            data-qori="alafasy">
-            Mishary Alafasy
-          </button>
-          <button onclick="loadAudio('muaiqly')"
-            class="audio-btn py-2 px-3 rounded-xl border text-xs font-medium transition
-            bg-gray-50 dark:bg-brand-card border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400"
-            data-qori="muaiqly">
-            Maher Al-Muaiqly
-          </button>
+      <!-- TASBEH (Mobilga moslangan) -->
+      <div class="bg-white dark:bg-brand-surf rounded-3xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col items-center relative overflow-hidden">
+        <div class="absolute top-4 left-4 text-xs font-bold text-gray-400">Takror: <span id="repeat-num" class="text-green-500">{{ obj.repeats }}</span></div>
+        <div class="absolute top-4 right-4 text-xs font-bold text-gray-400">
+          Maqsad: <select id="target-select" onchange="updateTarget()" class="bg-transparent font-bold text-green-500 outline-none"><option value="10">10</option><option value="40">40</option><option value="100">100</option></select>
         </div>
-        <audio id="audio-player" controls class="w-full" style="height:36px">
-          <source src="{{ audio_url }}" type="audio/mpeg">
-        </audio>
-        <div id="audio-loading" class="text-xs text-gray-400 mt-1 hidden">Yuklanmoqda...</div>
-      </div>
 
-      <!-- TASBEH -->
-      <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-4">🔄 Takror sanagi</div>
-
-        <!-- Doira sanagich -->
-        <div class="flex flex-col items-center gap-4">
-          <div class="relative w-36 h-36">
-            <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="50" fill="none" stroke="currentColor"
-                class="text-gray-100 dark:text-gray-800" stroke-width="8"/>
-              <circle id="progress-ring" cx="60" cy="60" r="50" fill="none"
-                stroke="currentColor" class="text-green-500 dark:text-brand-accent"
-                stroke-width="8" stroke-linecap="round"
-                stroke-dasharray="314" stroke-dashoffset="314"
-                style="transition: stroke-dashoffset 0.3s ease"/>
-            </svg>
-            <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <div class="text-4xl font-bold text-gray-900 dark:text-white" id="tasbeh-count">
-                {{ obj.repeats }}
-              </div>
-              <div class="text-[10px] text-gray-400">marta</div>
-            </div>
-          </div>
-
-          <!-- Maqsad -->
-          <div class="flex items-center gap-2 text-xs text-gray-500">
-            Maqsad:
-            <select id="target-select" onchange="updateTarget()"
-              class="bg-gray-100 dark:bg-brand-card rounded-lg px-2 py-1 text-xs font-bold text-gray-700 dark:text-gray-300 border-none">
-              <option value="7">7</option>
-              <option value="10" selected>10</option>
-              <option value="20">20</option>
-              <option value="40">40</option>
-              <option value="100">100</option>
-            </select>
-            marta
-          </div>
-
-          <!-- Takrorlash tugmasi -->
-          <button id="tasbeh-btn" onclick="doRepeat()"
-            class="w-24 h-24 rounded-full bg-green-500 dark:bg-brand-accent text-white dark:text-black text-4xl font-bold shadow-lg shadow-green-500/30 active:scale-95 transition-transform select-none">
-            +
-          </button>
-
-          <!-- Reset -->
-          <button onclick="resetTasbeh()"
-            class="text-xs text-gray-400 hover:text-red-500 transition">
-            Noldan boshlash
-          </button>
-        </div>
+        <button id="tasbeh-btn" onclick="doRepeat()" class="w-32 h-32 mt-6 rounded-full bg-gradient-to-b from-green-400 to-green-600 dark:from-brand-accent dark:to-green-600 text-white dark:text-brand-bg text-5xl font-black shadow-[0_10px_30px_rgba(34,197,94,0.4)] active:scale-90 active:shadow-inner transition-all flex items-center justify-center select-none">
+          <span id="tasbeh-count">{{ obj.repeats }}</span>
+        </button>
+        <button onclick="resetTasbeh()" class="mt-6 text-[10px] text-gray-400 hover:text-red-500 uppercase tracking-widest font-bold">Noldan boshlash</button>
       </div>
 
       <!-- YODLANDI TUGMASI -->
-      <button id="memorize-btn" onclick="doMemorize()"
-        class="w-full py-4 rounded-2xl font-bold text-sm transition
-        {% if obj.is_memorized %}
-          bg-green-500 text-white shadow-lg shadow-green-500/30
-        {% else %}
-          bg-white dark:bg-brand-surf border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-green-500
-        {% endif %}">
-        {% if obj.is_memorized %}✅ Yodlandi — Barakalloh!{% else %}🧠 Yodladim deb belgilash{% endif %}
-      </button>
+      <form method="POST" class="w-full">
+        {% csrf_token %}
+        <button type="submit" name="action" value="{% if obj.is_memorized %}unmemorize{% else %}memorized{% endif %}"
+          class="w-full py-4 rounded-2xl font-bold text-sm transition
+          {% if obj.is_memorized %}bg-green-500 text-white shadow-lg shadow-green-500/30
+          {% else %}bg-white dark:bg-brand-surf border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-green-500{% endif %}">
+          {% if obj.is_memorized %}✅ Yodlandi (Bekor qilish){% else %}🧠 Yodladim deb belgilash{% endif %}
+        </button>
+      </form>
 
       <!-- NAVIGATSIYA -->
-      <div class="flex gap-3 pb-4">
+      <div class="flex gap-3 pb-2">
         {% if prev_ayah %}
-        <a href="{% url 'memorize_ayah' surah_id prev_ayah %}"
-          class="flex-1 py-3 rounded-xl bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-800 text-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 transition">
-          ← Oldingi
-        </a>
+        <a href="{% url 'memorize_ayah' surah_id prev_ayah %}" class="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-brand-card text-center text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition">← Oldingi</a>
         {% endif %}
         {% if next_ayah %}
-        <a href="{% url 'memorize_ayah' surah_id next_ayah %}"
-          class="flex-1 py-3 rounded-xl bg-green-500 dark:bg-brand-accent text-white dark:text-black text-center text-sm font-bold hover:opacity-90 transition">
-          Keyingi →
-        </a>
+        <a href="{% url 'memorize_ayah' surah_id next_ayah %}" class="flex-1 py-3 rounded-xl bg-green-500 dark:bg-brand-accent text-white dark:text-black text-center text-sm font-bold hover:opacity-90 transition">Keyingi →</a>
         {% endif %}
       </div>
 
@@ -278,24 +215,27 @@
   }
 
   // ===== AUDIO =====
+// ===== AUDIO QORI XOTIRASI =====
   const AUDIO_URLS = {
     alafasy: '{{ audio_url }}',
     muaiqly: '{{ audio_url_muaiqly }}',
+    custom: '{% if obj.custom_audio %}{{ obj.custom_audio.url }}{% endif %}'
   };
 
-  function loadAudio(qori) {
-    document.querySelectorAll('.audio-btn').forEach(b => {
-      b.className = 'audio-btn py-2 px-3 rounded-xl border text-xs font-medium transition bg-gray-50 dark:bg-brand-card border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400';
-    });
-    const btn = document.querySelector(`[data-qori="${qori}"]`);
-    btn.className = 'audio-btn py-2 px-3 rounded-xl border text-xs font-medium transition bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400';
+  const player = document.getElementById('audio-player');
+  const qoriSelect = document.getElementById('qori-select');
 
-    const player = document.getElementById('audio-player');
-    const loading = document.getElementById('audio-loading');
-    loading.classList.remove('hidden');
-    player.src = AUDIO_URLS[qori] || '';
-    player.load();
-    player.oncanplay = () => loading.classList.add('hidden');
+  // Xotiradan o'qish
+  const savedQori = localStorage.getItem('selectedQori') || 'alafasy';
+  if (AUDIO_URLS[savedQori]) {
+    qoriSelect.value = savedQori;
+    player.src = AUDIO_URLS[savedQori];
+  }
+
+  function changeQori() {
+    const qori = qoriSelect.value;
+    localStorage.setItem('selectedQori', qori);
+    player.src = AUDIO_URLS[qori];
     player.play();
   }
 

@@ -160,6 +160,26 @@
 </div>
 </div>
 
+<!-- MOBILE BOTTOM NAVIGATION -->
+  <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-brand-surf border-t border-gray-200 dark:border-gray-800 flex justify-around items-center pb-safe z-50 h-16">
+    <a href="{% url 'home' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_home %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
+      <span class="text-xl">🏠</span>
+      <span class="text-[9px] font-bold">Asosiy</span>
+    </a>
+    <a href="{% url 'quran_home' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_quran %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
+      <span class="text-xl">📖</span>
+      <span class="text-[9px] font-bold">Qur'on</span>
+    </a>
+    <a href="{% url 'ibodat' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_ibodat %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
+      <span class="text-xl">🌙</span>
+      <span class="text-[9px] font-bold">Ibodat</span>
+    </a>
+    <a href="{% url 'prayer_history' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_prayer_history %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
+      <span class="text-xl">📅</span>
+      <span class="text-[9px] font-bold">Tarix</span>
+    </a>
+  </nav>
+
 <script>
   // Sticky bar uchun — faqat authenticated bo'lsa ishlaydi
   (function() {

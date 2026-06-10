@@ -12,6 +12,10 @@ class AyahMemorization(models.Model):
     # Ko'z xotirasi uchun Mushaf rasmi
     mushaf_image = models.ImageField(upload_to='mushaf_images/', null=True, blank=True)
     
+    # Shaxsiy audio yuklash uchun (YANGI)
+    custom_audio = models.FileField(upload_to='custom_audios/', null=True, blank=True)
+    custom_audio_title = models.CharField(max_length=100, null=True, blank=True)
+    
     last_practiced = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -20,3 +24,10 @@ class AyahMemorization(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Sura {self.surah_number}, Oyat {self.ayah_number}"
+    
+    # Ko'z xotirasi uchun Mushaf rasmi
+    mushaf_image = models.ImageField(upload_to='mushaf_images/', null=True, blank=True)
+    
+    # Shaxsiy audio yuklash uchun (YANGI)
+    custom_audio = models.FileField(upload_to='custom_audios/', null=True, blank=True)
+    custom_audio_title = models.CharField(max_length=100, null=True, blank=True)

@@ -34,85 +34,60 @@ def quran_home(request):
 
 @login_required
 def surah_detail(request, surah_id):
-    """Sura ichidagi barcha oyatlar va ularning yodlanish holati"""
     try:
-        r = requests.get(
-            f'https://api.alquran.cloud/v1/surah/{surah_id}/quran-uthmani',
-            timeout=5
-        )
-        surah_data = r.json()['data']
+        r_info = requests.get(f'https://api.alquran.cloud/v1/surah/{surah_id}', timeout=5)
+        surah_data = r_info.json()['data']
+        # Aniq Tajvid API (Quran.com)
+        r_tajweed = requests.get(f'https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?chapter_number={surah_id}', timeout=5)
+        tajweed_data = r_tajweed.json()['verses']
     except:
         return redirect('quran_home')
 
-    progress = AyahMemorization.objects.filter(
-        user=request.user, surah_number=surah_id
-    )
+    progress = AyahMemorization.objects.filter(user=request.user, surah_number=surah_id)
     memo_dict = {p.ayah_number: p for p in progress}
 
     ayahs = []
-    for ayah in surah_data['ayahs']:
+    for i, ayah in enumerate(surah_data['ayahs']):
         num = ayah['numberInSurah']
         p   = memo_dict.get(num)
+        
+        tajweed_html = tajweed_data[i]['text_uthmani_tajweed'] if i < len(tajweed_data) else ayah['text']
+        
         ayahs.append({
             'number':       num,
-            'text':         ayah['text'],
-            'text_colored': mark_safe(colorize_arabic(ayah['text'])),
+            'text_colored': mark_safe(tajweed_html),
             'is_memorized': p.is_memorized if p else False,
             'repeats':      p.repeats if p else 0,
         })
 
-    context = {
-        'surah': surah_data,
-        'ayahs': ayahs,
-    }
-    return render(request, 'quran/surah_detail.html', context)
+    return render(request, 'quran/surah_detail.html', {'surah': surah_data, 'ayahs': ayahs})
 
 
 @login_required
 def memorize_ayah(request, surah_id, ayah_id):
-    """Yodlash xonasi — bitta oyat, uning audiolari va takrorlar soni"""
     try:
-        r = requests.get(
-            f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/quran-uthmani',
-            timeout=5
-        )
+        r = requests.get(f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/quran-uthmani', timeout=5)
         ayah_data = r.json()['data']
+        # Bitta oyat uchun aniq Tajvid
+        r_taj = requests.get(f'https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?verse_key={surah_id}:{ayah_id}', timeout=5)
+        tajweed_html = r_taj.json()['verses'][0]['text_uthmani_tajweed']
     except:
         return redirect('surah_detail', surah_id=surah_id)
 
-    # 1. Maher Al-Muaiqly audiosi (Identifikator to'g'rilandi: ar.maheralmuaiqly)
-    audio_url_muaiqly = ''
-    try:
-        r3 = requests.get(
-            f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/ar.mahermuaiqly',
-            timeout=5
-        )
-        if r3.status_code == 200:
-            audio_url_muaiqly = r3.json()['data'].get('audio', '')
-    except:
-        pass
+    # API Audiolar
+    audio_url = f"https://cdn.islamic.network/quran/audio/128/ar.alafasy/{ayah_data['number']}.mp3"
+    audio_url_muaiqly = f"https://cdn.islamic.network/quran/audio/128/ar.mahermuaiqly/{ayah_data['number']}.mp3"
 
-    # 2. Mishary Al-Afasy audiosi
-    audio_url = ''
-    try:
-        r2 = requests.get(
-            f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/ar.alafasy',
-            timeout=5
-        )
-        if r2.status_code == 200:
-            audio_url = r2.json()['data'].get('audio', '')
-    except:
-        pass
+    obj, _ = AyahMemorization.objects.get_or_create(user=request.user, surah_number=surah_id, ayah_number=ayah_id)
 
-    obj, _ = AyahMemorization.objects.get_or_create(
-        user=request.user,
-        surah_number=surah_id,
-        ayah_number=ayah_id,
-    )
-
+    # POST so'rovlar (Takrorlash, Yodlash va Shaxsiy Audio yuklash)
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'repeat':
+        if 'custom_audio' in request.FILES:
+            obj.custom_audio = request.FILES['custom_audio']
+            obj.custom_audio_title = request.POST.get('audio_title', 'Mening audim')
+            obj.save()
+        elif action == 'repeat':
             obj.repeats += 1
             obj.save(update_fields=['repeats'])
         elif action == 'memorized':
@@ -126,20 +101,17 @@ def memorize_ayah(request, surah_id, ayah_id):
         return redirect('memorize_ayah', surah_id=surah_id, ayah_id=ayah_id)
 
     context = {
-        'surah_id':     surah_id,
-        'ayah_id':      ayah_id,
-        'ayah_text':    ayah_data.get('text', ''),
-        'text_colored': mark_safe(colorize_arabic(ayah_data.get('text', ''))),
-        'surah_name':   ayah_data.get('surah', {}).get('englishName', ''),
-        'surah_arabic': ayah_data.get('surah', {}).get('name', ''),
-        'total_ayahs':  ayah_data.get('surah', {}).get('numberOfAyahs', 0),
-        'audio_url':    audio_url,
-        'obj':          obj,
-        'prev_ayah':    ayah_id - 1 if ayah_id > 1 else None,
-        'next_ayah':    ayah_id + 1 if ayah_id < ayah_data.get('surah', {}).get('numberOfAyahs', 0) else None,
-        'audio_url_muaiqly': audio_url_muaiqly,
+        'surah_id': surah_id, 'ayah_id': ayah_id,
+        'text_colored': mark_safe(tajweed_html),
+        'surah_name': ayah_data['surah']['englishName'],
+        'surah_arabic': ayah_data['surah']['name'],
+        'audio_url': audio_url, 'audio_url_muaiqly': audio_url_muaiqly,
+        'obj': obj,
+        'prev_ayah': ayah_id - 1 if ayah_id > 1 else None,
+        'next_ayah': ayah_id + 1 if ayah_id < ayah_data['surah']['numberOfAyahs'] else None,
     }
     return render(request, 'quran/memorize.html', context)
+
 
 
 @login_required
