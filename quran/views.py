@@ -68,19 +68,21 @@ def memorize_ayah(request, surah_id, ayah_id):
     try:
         r = requests.get(f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/quran-uthmani', timeout=5)
         ayah_data = r.json()['data']
-        # Bitta oyat uchun aniq Tajvid
+        
         r_taj = requests.get(f'https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?verse_key={surah_id}:{ayah_id}', timeout=5)
         tajweed_html = r_taj.json()['verses'][0]['text_uthmani_tajweed']
+        
+        # Transkripsiyani tortib kelish
+        r_trans = requests.get(f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/en.transliteration', timeout=5)
+        transliteration = r_trans.json()['data']['text']
     except:
         return redirect('surah_detail', surah_id=surah_id)
 
-    # API Audiolar
     audio_url = f"https://cdn.islamic.network/quran/audio/128/ar.alafasy/{ayah_data['number']}.mp3"
     audio_url_muaiqly = f"https://cdn.islamic.network/quran/audio/128/ar.mahermuaiqly/{ayah_data['number']}.mp3"
 
     obj, _ = AyahMemorization.objects.get_or_create(user=request.user, surah_number=surah_id, ayah_number=ayah_id)
 
-    # POST so'rovlar (Takrorlash, Yodlash va Shaxsiy Audio yuklash)
     if request.method == 'POST':
         action = request.POST.get('action')
         if 'custom_audio' in request.FILES:
@@ -98,11 +100,22 @@ def memorize_ayah(request, surah_id, ayah_id):
         elif action == 'unmemorize':
             obj.is_memorized = False
             obj.save(update_fields=['is_memorized'])
+        elif action == 'delete_image':
+            if obj.mushaf_image:
+                obj.mushaf_image.delete() # Faylni va bazadagi yozuvni butunlay o'chiradi
+            return redirect('memorize_ayah', surah_id=surah_id, ayah_id=ayah_id)
+        elif action == 'save_tafsir':
+            obj.tafsir_text = request.POST.get('tafsir_text')
+            obj.tafsir_author = request.POST.get('tafsir_author') or "O'zim"
+            obj.save(update_fields=['tafsir_text', 'tafsir_author'])
+            return redirect('memorize_ayah', surah_id=surah_id, ayah_id=ayah_id)
+            
         return redirect('memorize_ayah', surah_id=surah_id, ayah_id=ayah_id)
 
     context = {
         'surah_id': surah_id, 'ayah_id': ayah_id,
         'text_colored': mark_safe(tajweed_html),
+        'transliteration': transliteration,
         'surah_name': ayah_data['surah']['englishName'],
         'surah_arabic': ayah_data['surah']['name'],
         'audio_url': audio_url, 'audio_url_muaiqly': audio_url_muaiqly,
@@ -111,7 +124,6 @@ def memorize_ayah(request, surah_id, ayah_id):
         'next_ayah': ayah_id + 1 if ayah_id < ayah_data['surah']['numberOfAyahs'] else None,
     }
     return render(request, 'quran/memorize.html', context)
-
 
 
 @login_required

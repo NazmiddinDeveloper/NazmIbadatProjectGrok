@@ -16,6 +16,10 @@ class AyahMemorization(models.Model):
     custom_audio = models.FileField(upload_to='custom_audios/', null=True, blank=True)
     custom_audio_title = models.CharField(max_length=100, null=True, blank=True)
     
+    # Tafsir va Qaydlar uchun (YANGI)
+    tafsir_text = models.TextField(null=True, blank=True)
+    tafsir_author = models.CharField(max_length=100, null=True, blank=True)
+    
     last_practiced = models.DateTimeField(auto_now=True)
 
     class Meta:
