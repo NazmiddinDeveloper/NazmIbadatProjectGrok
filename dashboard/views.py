@@ -7,11 +7,22 @@ from .forms import TaskForm
 from ibodat.views import get_prayer_data
 import calendar
 from datetime import date, timedelta
+from gamification.services import check_and_award_badges
+from gamification.models import UserBadge   # Yuqoriga qo'shing
+from gamification.services import check_and_award_badges, generate_daily_quests   # Qo'shing
+from gamification.models import DailyQuest   # Qo'shing
+from gamification.services import update_quest_progress
+from django.http import JsonResponse
+from gamification.models import DailyQuest
+from datetime import datetime
 
 @login_required
 def home(request):
-    user  = request.user
+    user = request.user
     today = timezone.localdate()
+
+    # === DAILY QUESTLarni avtomatik yaratish ===
+    generate_daily_quests(user)
 
     if request.method == 'POST':
         form = TaskForm(request.POST)
@@ -23,48 +34,68 @@ def home(request):
     else:
         form = TaskForm()
 
-    tasks     = Task.objects.filter(user=user, due_date=today)
+    tasks = Task.objects.filter(user=user, due_date=today)
     completed = tasks.filter(is_completed=True).count()
-    total     = tasks.count()
-    progress  = int((completed / total) * 100) if total > 0 else 0
+    total = tasks.count()
+    progress = int((completed / total) * 100) if total > 0 else 0
 
     shifts = Shift.objects.filter(user=user, date__gte=today)[:3]
 
-    next_level_xp  = user.level * 500
+    next_level_xp = user.level * 500
     level_progress = int((user.xp / next_level_xp) * 100) if next_level_xp > 0 else 0
 
-    # Namoz vaqtlari — sticky bar uchun
-    # Namoz mini widget uchun
-    prayer_data  = get_prayer_data()
-    times_json   = prayer_data['today']['times'] if prayer_data else {}
-    current_key  = prayer_data['today']['current']['key'] if prayer_data else None
-    next_prayer  = prayer_data['today']['next'] if prayer_data else {}
+    # === Namoz vaqtlari ===
+    prayer_data = get_prayer_data()
+    times_json = prayer_data['today']['times'] if prayer_data else {}
+    current_key = prayer_data['today']['current']['key'] if prayer_data else None
+    next_prayer = prayer_data['today']['next'] if prayer_data else {}
 
-    from ibodat.models import PrayerLog, PRAYER_ORDER
-    from ibodat.utils import get_prayer_zones
-    from ibodat.views import PRAYER_LABELS, PRAYER_ICONS, build_prayers
+    from ibodat.models import PrayerLog
+    from ibodat.views import build_prayers
 
-    today_logs    = PrayerLog.objects.filter(user=user, date=today)
-    done_set      = set(today_logs.filter(is_done=True).values_list('prayer', flat=True))
-    done_at_map   = {l.prayer: str(l.done_at)[:5] for l in today_logs if l.done_at}
-    status_map    = {l.prayer: l.status for l in today_logs}
+    today_logs = PrayerLog.objects.filter(user=user, date=today)
+    done_set = set(today_logs.filter(is_done=True).values_list('prayer', flat=True))
+    done_at_map = {l.prayer: str(l.done_at)[:5] for l in today_logs if l.done_at}
+    status_map = {l.prayer: l.status for l in today_logs}
 
-    prayers_mini  = build_prayers(times_json, current_key, done_set, done_at_map, status_map) if times_json else []
+    prayers_mini = build_prayers(times_json, current_key, done_set, done_at_map, status_map) if times_json else []
+
+    # === Badge va Questlar ===
+    user_badges = UserBadge.objects.filter(user=user).select_related('badge').order_by('-earned_at')[:6]
+    today_quests = DailyQuest.objects.filter(user=user, date=today)
+
+    # === QUYOSH CHIQISHI WIDGETI (faqat Bomdod vaqti ichida ko'rinadi) ===
+    show_sunrise_widget = False
+    quyosh_time = times_json.get('quyosh')
+
+    if quyosh_time:
+        try:
+            now_str = timezone.localtime().strftime('%H:%M')
+            now_dt = datetime.strptime(now_str, "%H:%M")
+            quyosh_dt = datetime.strptime(quyosh_time, "%H:%M")
+
+            if now_dt < quyosh_dt:
+                show_sunrise_widget = True
+        except:
+            pass
 
     context = {
-        'form':           form,
-        'tasks':          tasks,
-        'completed':      completed,
-        'total':          total,
-        'progress':       progress,
-        'shifts':         shifts,
+        'form': form,
+        'tasks': tasks,
+        'completed': completed,
+        'total': total,
+        'progress': progress,
+        'shifts': shifts,
         'level_progress': level_progress,
-        'next_level_xp':  next_level_xp,
-        'xp_remaining':   next_level_xp - user.xp,
-        'today':          today,
-        'times_json':     times_json,
+        'next_level_xp': next_level_xp,
+        'xp_remaining': next_level_xp - user.xp,
+        'today': today,
+        'times_json': times_json,
         'prayers_mini': prayers_mini,
-        'next_prayer':    next_prayer,  # <--- MANA SHU QATORNI QO'SHING GEMINI 3.1PRO AISTUDIO
+        'next_prayer': next_prayer,
+        'user_badges': user_badges,
+        'today_quests': today_quests,
+        'show_sunrise_widget': show_sunrise_widget,   # ← Qo'shildi
     }
     return render(request, 'dashboard/home.html', context)
 
@@ -93,6 +124,10 @@ def toggle_task(request, task_id):
     user.save(update_fields=['level'])
 
     task.save()
+    if task.is_completed:
+        update_quest_progress(request.user, 'task', amount=1)
+        
+    check_and_award_badges(request.user)
     return redirect('home')
 
 
@@ -190,3 +225,26 @@ def smenalar(request):
         'next_month': next_month, 'next_year': next_year,
     }
     return render(request, 'dashboard/smenalar.html', context)
+
+
+@login_required
+def get_daily_quests_api(request):
+    """AJAX uchun bugungi questlarni JSON ko‘rinishida qaytaradi"""
+    today = timezone.localdate()
+    quests = DailyQuest.objects.filter(user=request.user, date=today)
+
+    data = []
+    for q in quests:
+        data.append({
+            'id': q.id,
+            'title': q.title,
+            'description': q.description,           # ← Qo‘shildi
+            'current_progress': q.current_progress,
+            'target_value': q.target_value,
+            'progress_percent': q.progress_percent,
+            'status': q.status,
+            'xp_reward': q.xp_reward,
+            'motivational_message': q.motivational_message,  # ← Qo‘shildi (ixtiyoriy)
+        })
+
+    return JsonResponse({'quests': data})

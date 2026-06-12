@@ -264,39 +264,13 @@
   const MEMO_URL = '{% url "api_memorize" surah_id ayah_id %}';
   const UPLOAD_URL = '{% url "api_upload_image" surah_id ayah_id %}';
 
-  // ===== MODALLAR =====
-  function openAudioSettings() { document.getElementById('audio-modal').classList.remove('hidden'); }
-  function closeAudioSettings() { document.getElementById('audio-modal').classList.add('hidden'); }
-  function openTafsirModal() { 
-    document.getElementById('tafsir-modal').classList.remove('hidden'); 
-    const viewMode = document.getElementById('tafsir-view-mode');
-    const editMode = document.getElementById('tafsir-edit-mode');
-    if (viewMode) viewMode.classList.remove('hidden');
-    if (editMode) editMode.classList.add('hidden');
-  }
-  function closeTafsirModal() { document.getElementById('tafsir-modal').classList.add('hidden'); }
-  function showTafsirEdit() {
-    document.getElementById('tafsir-view-mode').classList.add('hidden');
-    document.getElementById('tafsir-edit-mode').classList.remove('hidden');
-  }
-  function hideTafsirEdit() {
-    document.getElementById('tafsir-view-mode').classList.remove('hidden');
-    document.getElementById('tafsir-edit-mode').classList.add('hidden');
-  }
-  function openDeleteImageModal() { document.getElementById('delete-image-modal').classList.remove('hidden'); }
-  function closeDeleteImageModal() { document.getElementById('delete-image-modal').classList.add('hidden'); }
-
-  // ===== TRANSKRIPSIYA =====
-  function toggleTransliteration() {
-    const el = document.getElementById('ayah-trans');
-    el.classList.toggle('hidden');
-  }
-
-  // ===== TASBEH MANTIQ =====
+  // ==================== O'ZGARUVCHILAR ====================
   let count = {{ obj.repeats }};
-  let target = 10;
   let isMemo = {{ obj.is_memorized|yesno:"true,false" }};
+  let target = 10;
+  let currentPlayCount = 0;
 
+  // ==================== TASBEH ====================
   function updateRing() {
     const pct = Math.min(count / target, 1);
     const offset = 314 * (1 - pct);
@@ -313,7 +287,11 @@
     count++;
     updateRing();
     if (navigator.vibrate) navigator.vibrate(30);
-    await fetch(REPEAT_URL, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+
+    await fetch(REPEAT_URL, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF }
+    }).catch(console.error);
   }
 
   function resetTasbeh() {
@@ -323,28 +301,59 @@
     }
   }
 
-  // ===== YODLASH (AJAX) =====
+  // ==================== YODLASH TUGMASI (TO'LIQ TUZATILGAN) ====================
   async function doMemorize() {
-    const res = await fetch(MEMO_URL, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
-    const data = await res.json();
-    isMemo = data.is_memorized;
-    count = data.repeats;
-    updateRing();
-
     const btn = document.getElementById('memorize-btn');
-    if (isMemo) {
-      btn.className = 'w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-green-500 text-white shadow-md shadow-green-500/20 border-none';
-      btn.innerHTML = '<span class="text-base">✨</span> Yodlandi';
-    } else {
-      btn.className = 'w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-300';
-      btn.innerHTML = '<span class="text-base">🧠</span> Yodladim';
+
+    try {
+      const res = await fetch(MEMO_URL, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': CSRF,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!res.ok) {
+        // Server xatolik qaytargan bo'lsa
+        const text = await res.text();
+        console.error('Server xatosi:', res.status, text);
+        throw new Error('Server xatosi: ' + res.status);
+      }
+
+      const data = await res.json();
+
+      isMemo = data.is_memorized;
+      count = data.repeats;
+      updateRing();
+
+      // Tugmani yangilash
+      if (isMemo) {
+        btn.className = `w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 
+                         bg-green-500 text-white shadow-md shadow-green-500/20 border-none`;
+        btn.innerHTML = `<span class="text-base">✨</span> Yodlandi`;
+      } else {
+        btn.className = `w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 
+                         bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 
+                         hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-300`;
+        btn.innerHTML = `<span class="text-base">🧠</span> Yodladim`;
+      }
+
+    } catch (error) {
+      console.error('Yodlashda xatolik:', error);
+      alert('Xatolik yuz berdi. Iltimos, qayta urinib ko‘ring.');
     }
   }
 
-  // ===== RASM YUKLASH =====
+  // ==================== QOLGAN FUNKSIYALAR ====================
+  function toggleTransliteration() {
+    document.getElementById('ayah-trans').classList.toggle('hidden');
+  }
+
   async function uploadImage(input) {
     const file = input.files[0];
     if (!file) return;
+
     const status = document.getElementById('upload-status');
     status.textContent = 'Yuklanmoqda...';
     status.classList.remove('hidden');
@@ -358,7 +367,7 @@
     if (data.status === 'ok') location.reload();
   }
 
-  // ===== AUDIO PLEYER VA SOZLAMALAR =====
+  // Audio player
   const AUDIO_URLS = {
     alafasy: '{{ audio_url }}',
     muaiqly: '{{ audio_url_muaiqly }}',
@@ -370,8 +379,6 @@
   const audioStatus = document.getElementById('audio-status');
   const qoriSelect = document.getElementById('qori-select');
   const repeatSelect = document.getElementById('audio-repeat-select');
-  
-  let currentPlayCount = 0;
 
   const savedQori = localStorage.getItem('selectedQori') || 'alafasy';
   if (AUDIO_URLS[savedQori]) {
@@ -416,13 +423,33 @@
     audioStatus.textContent = "O'qilmoqda...";
   }
 
-  // ===== ZOOM =====
   let fontSize = 2.2;
   function changeSize(delta) {
     fontSize = Math.min(Math.max(fontSize + delta * 0.25, 1.0), 4.0);
     document.getElementById('ayah-text').style.fontSize = fontSize + 'rem';
   }
 
+  // Modallar
+  function openAudioSettings() { document.getElementById('audio-modal').classList.remove('hidden'); }
+  function closeAudioSettings() { document.getElementById('audio-modal').classList.add('hidden'); }
+  function openTafsirModal() {
+    document.getElementById('tafsir-modal').classList.remove('hidden');
+    document.getElementById('tafsir-view-mode').classList.remove('hidden');
+    document.getElementById('tafsir-edit-mode').classList.add('hidden');
+  }
+  function closeTafsirModal() { document.getElementById('tafsir-modal').classList.add('hidden'); }
+  function showTafsirEdit() {
+    document.getElementById('tafsir-view-mode').classList.add('hidden');
+    document.getElementById('tafsir-edit-mode').classList.remove('hidden');
+  }
+  function hideTafsirEdit() {
+    document.getElementById('tafsir-view-mode').classList.remove('hidden');
+    document.getElementById('tafsir-edit-mode').classList.add('hidden');
+  }
+  function openDeleteImageModal() { document.getElementById('delete-image-modal').classList.remove('hidden'); }
+  function closeDeleteImageModal() { document.getElementById('delete-image-modal').classList.add('hidden'); }
+
+  // Boshlang'ich holat
   updateRing();
 </script>
 {% endblock %}

@@ -10,6 +10,7 @@ urlpatterns = [
     path('ibodat/',   include('ibodat.urls')),
     path('quran/', include('quran.urls')),
     path('',          include('dashboard.urls')),
+    path('statistika/', include('statistika.urls')),
 ]
 
 # Rasmlar ishlashi uchun:

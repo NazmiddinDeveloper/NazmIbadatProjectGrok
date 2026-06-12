@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Statistika{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Samaradorlik Statistikasi</h1>
+
+    {% if not has_data %}
+        <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+            <p class="text-gray-500 dark:text-gray-400">Hali statistika ma'lumotlari mavjud emas.</p>
+            <p class="text-sm mt-2">Vazifa bajaring yoki Qur'on yodlang — ma'lumotlar avtomatik yig'iladi.</p>
+        </div>
+    {% else %}
+        <!-- Oxirgi natijalar -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white dark:bg-brand-surf rounded-2xl border p-5">
+                <div class="text-sm text-gray-500">Oxirgi Task</div>
+                <div class="text-3xl font-bold text-green-600">{{ latest_stat.task_efficiency }}%</div>
+            </div>
+            <div class="bg-white dark:bg-brand-surf rounded-2xl border p-5">
+                <div class="text-sm text-gray-500">Oxirgi Qur'on</div>
+                <div class="text-3xl font-bold text-blue-600">{{ latest_stat.quran_efficiency }}%</div>
+            </div>
+            <div class="bg-white dark:bg-brand-surf rounded-2xl border p-5">
+                <div class="text-sm text-gray-500">Umumiy Samaradorlik</div>
+                <div class="text-3xl font-bold text-purple-600">{{ latest_stat.overall_efficiency }}%</div>
+            </div>
+        </div>
+
+        <!-- Grafik -->
+        <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold">Oxirgi 30 kunlik samaradorlik</h2>
+                <span class="text-xs text-gray-400">{{ stats_count }} kunlik ma'lumot</span>
+            </div>
+
+            {% if stats_count < 3 %}
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    Grafik uchun kamida 3 kunlik ma'lumot kerak.<br>
+                    Hozircha faqat {{ stats_count }} kunlik ma'lumot mavjud.
+                </div>
+            {% else %}
+                <canvas id="efficiencyChart" height="90"></canvas>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+{% if has_data and stats_count >= 3 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('efficiencyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ labels|safe }},
+            datasets: [
+                {
+                    label: 'Task',
+                    data: {{ task_data|safe }},
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3
+                },
+                {
+                    label: 'Qur\'on',
+                    data: {{ quran_data|safe }},
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3
+                },
+                {
+                    label: 'Umumiy',
+                    data: {{ overall_data|safe }},
+                    borderColor: '#a855f7',
+                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                    tension: 0.3,
+                    borderWidth: 3,
+                    pointRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { padding: 20 } }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { stepSize: 20 }
+                },
+                x: {
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

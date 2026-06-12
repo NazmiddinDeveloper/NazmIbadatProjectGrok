@@ -2,211 +2,222 @@
 {% block title %}Ibodat{% endblock %}
 
 {% block content %}
-  <!-- MAIN -->
 <div class="flex-1 flex flex-col overflow-hidden">
 
     <!-- TOPBAR -->
     <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
-      <div>
-        <div class="text-base font-bold text-gray-900 dark:text-white">🌙 Ibodat</div>
-        <div class="text-xs text-gray-500 dark:text-gray-400">{{ today|date:"d F, Y" }}</div>
-      </div>
-      <div class="flex items-center gap-3">
-        <!-- Streak -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-          <span>🔥</span>
-          <span class="text-xs font-bold text-orange-600 dark:text-orange-400">{{ streak }} kun</span>
+        <div>
+            <div class="text-base font-bold text-gray-900 dark:text-white">🌙 Ibodat</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ today|date:"d F, Y" }}</div>
         </div>
-        <!-- Bugun -->
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-          <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-          <span class="text-xs font-bold text-green-700 dark:text-green-400">{{ done_today }}/6</span>
+        <div class="flex items-center gap-3">
+            <!-- Streak -->
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                <span>🔥</span>
+                <span class="text-xs font-bold text-orange-600 dark:text-orange-400">{{ streak }} kun</span>
+            </div>
+            <!-- Bugun -->
+            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-xs font-bold text-green-700 dark:text-green-400">{{ done_today }}/5</span>
+            </div>
         </div>
-      </div>
     </header>
 
     <main class="flex-1 overflow-y-auto p-5 pb-24 md:pb-5">
-      <div class="max-w-2xl mx-auto space-y-4">
+        <div class="max-w-2xl mx-auto space-y-5">
 
-        <!-- JORIY NAMOZ -->
-        {% if current %}
-        <div class="bg-[#0b1e12] rounded-2xl p-5 flex items-center justify-between">
-          <div>
-            <div class="text-xs text-green-400 uppercase tracking-widest font-medium mb-2">Hozirgi vaqt</div>
-            <div class="text-3xl font-bold text-white">{{ current.label }}</div>
-            <div class="text-green-400 font-mono text-sm mt-1" id="main-cd"></div>
-          </div>
-          <div class="text-right">
-            <div class="text-4xl font-bold text-white font-mono">{{ current.start }}</div>
-            <div class="text-xs text-green-900 mt-1">— {{ current.end }} gacha</div>
-            {% if next_p %}
-            <div class="text-xs text-green-600 mt-2">Keyingi: {{ next_p.label }} {{ next_p.time }}</div>
+            <!-- HOZIRGI VAQT -->
+            {% if current %}
+            <div class="bg-[#0b1e12] rounded-2xl p-5 flex items-center justify-between">
+                <div>
+                    <div class="text-xs text-green-400 uppercase tracking-widest font-medium mb-2">Hozirgi vaqt</div>
+                    <div class="text-3xl font-bold text-white">{{ current.label }}</div>
+                    <div class="text-green-400 font-mono text-sm mt-1" id="main-cd"></div>
+                </div>
+                <div class="text-right">
+                    <div class="text-4xl font-bold text-white font-mono">{{ current.start }}</div>
+                    <div class="text-xs text-green-900 mt-1">— {{ current.end }} gacha</div>
+                    {% if next_p %}
+                    <div class="text-xs text-green-600 mt-2">Keyingi: {{ next_p.label }} {{ next_p.time }}</div>
+                    {% endif %}
+                </div>
+            </div>
             {% endif %}
-          </div>
-        </div>
-        {% endif %}
+           
 
-        <!-- NAMOZ VAQTLARI -->
-        <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <h2 class="text-sm font-bold text-gray-900 dark:text-white">Bugungi namoz vaqtlari</h2>
-            <a href="{% url 'prayer_history' %}" class="text-xs text-green-600 dark:text-brand-accent hover:underline">Tarix →</a>
-          </div>
+<!-- NAMOZ VAQTLARI -->
+<div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-gray-900 dark:text-white">Bugungi namoz vaqtlari</h2>
+        <a href="{% url 'prayer_history' %}" class="text-xs text-green-600 dark:text-brand-accent hover:underline">Tarix →</a>
+    </div>
 
-          <div class="divide-y divide-gray-100 dark:divide-gray-800">
-            {% for p in prayers %}
-            <div class="px-5 py-3 {% if p.current %}bg-green-50 dark:bg-green-900/10{% endif %}">
-              <div class="flex items-center gap-3">
+    <div class="divide-y divide-gray-100 dark:divide-gray-800">
 
-                <!-- Icon -->
-                <div class="text-xl w-8 text-center">{{ p.icon }}</div>
+        {% for p in prayers %}
 
-                <!-- Info -->
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ p.label }}</span>
-                    {% if p.current %}
-                    <span class="text-[10px] bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">Hozir</span>
-                    {% endif %}
-                    
-                    {% if p.is_pending %}
-                      <span class="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">⚪ Kutilyapti</span>
-                    {% elif p.is_done %}
-                      {% if p.status == 'on_time' %}<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">✓ Boshida</span>
-                      {% elif p.status == 'late' %}<span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">✓ O'rtasida</span>
-                      {% elif p.status == 'makruh' %}<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">✓ Oxirida</span>
-                      {% elif p.status == 'qaza' %}<span class="text-[10px] bg-gray-800 text-white px-2 py-0.5 rounded-full">🌋 Qazo</span>
-                      {% endif %}
-                    {% elif p.current %}
-                      {% if p.zone_color == 'green' %}<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Afzal vaqti, o'qing</span>
-                      {% elif p.zone_color == 'yellow' %}<span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">O'rta vaqt, shoshiling</span>
-                      {% else %}<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Oxirgi vaqt, zudlik bilan!</span>{% endif %}
+            <!-- Namoz qatori -->
+            <div class="px-5 py-3 flex items-center justify-between {% if p.current %}bg-green-50 dark:bg-green-900/10{% endif %}">
+                
+                <!-- Chap qism: Icon + Nom + Vaqt -->
+                <div class="flex items-center gap-3">
+                    <span class="text-xl">{{ p.icon }}</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ p.label }}</span>
+                            <span class="text-xs text-gray-400 font-mono">{{ p.time }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- O'ng qism: Holat / Toggle -->
+                <div>
+                    {% if p.is_done %}
+                        {% if p.status == 'on_time' %}
+                            <span class="text-[10px] bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full">✓ Boshida</span>
+                        {% elif p.status == 'late' %}
+                            <span class="text-[10px] bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full">✓ O'rtasida</span>
+                        {% elif p.status == 'makruh' %}
+                            <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full">✓ Oxirida</span>
+                        {% elif p.status == 'qaza' %}
+                            <span class="text-[10px] bg-gray-700 text-white px-2.5 py-0.5 rounded-full">🌋 Qazo</span>
+                        {% endif %}
+                    {% elif p.is_pending %}
+                        <span class="text-[10px] bg-gray-700 text-gray-300 px-2.5 py-0.5 rounded-full">Kutilmoqda</span>
+                    {% elif p.needs_modal %}
+                        <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
+                                class="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white transition">
+                            Vaqt o'tdi
+                        </button>
                     {% else %}
-                      <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔥 O'tkazildi</span>
+                        <form method="POST" action="{% url 'toggle_prayer' p.key %}">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="w-7 h-7 rounded-full border-2 border-gray-400 dark:border-gray-600 hover:border-green-500 flex items-center justify-center transition">
+                            </button>
+                        </form>
                     {% endif %}
-                  </div>
-
-                <!-- Toggle -->
-                {% if p.is_pending %}
-                  <button type="button" onclick="alert('Hali vaqti kirmadi!')" class="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-gray-700 text-gray-300 cursor-not-allowed shrink-0"></button>
-                {% elif p.needs_modal %}
-                  <button type="button" onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" class="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-green-500 shrink-0"></button>
-                {% else %}
-                  <form method="POST" action="{% url 'toggle_prayer' p.key %}">
-                    {% csrf_token %}
-                    <button type="submit"
-                      class="w-8 h-8 rounded-full border-2 flex items-center justify-center transition shrink-0
-                      {% if p.is_done %}
-                        {% if p.status == 'on_time' %}bg-green-500 border-green-500 text-white
-                        {% elif p.status == 'late' %}bg-yellow-500 border-yellow-500 text-white
-                        {% elif p.status == 'makruh' %}bg-red-500 border-red-500 text-white
-                        {% else %}bg-gray-800 border-gray-800 text-white{% endif %}
-                      {% else %}border-gray-300 dark:border-gray-600 hover:border-green-500{% endif %}">
-                      {% if p.is_done %}{% if p.status == 'qaza' %}🌋{% else %}✓{% endif %}{% endif %}
-                    </button>
-                  </form>
-                {% endif %}
-
-              </div>
+                </div>
             </div>
-            {% endfor %}
-          </div>
-        </div>
 
-        <!-- HAFTALIK STATISTIKA -->
-        <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-          <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Haftalik statistika</h2>
-          <div class="flex items-end gap-2 h-20">
-            {% for day in week_data %}
-            <div class="flex-1 flex flex-col items-center gap-1">
-              <div class="w-full rounded-t-md transition-all
-                {% if day.pct == 100 %}bg-green-500
-                {% elif day.pct >= 60 %}bg-yellow-400
-                {% elif day.pct > 0 %}bg-red-400
-                {% else %}bg-gray-200 dark:bg-gray-700{% endif %}"
-                style="height: {{ day.pct }}%; min-height: 4px;">
-              </div>
-              <span class="text-[10px] text-gray-400">{{ day.day }}</span>
-              <span class="text-[10px] font-bold text-gray-600 dark:text-gray-300">{{ day.count }}/6</span>
+            <!-- QUYOSH CHIQISHI (Bomdod va Peshin orasida) -->
+            {% if p.key == 'bomdod' %}
+            <div class="px-5 py-1 {% if show_sunrise %}bg-orange-50 dark:bg-orange-900/10{% else %}bg-gray-50 dark:bg-gray-800/40{% endif %} border-y border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl {% if show_sunrise %}text-orange-500{% else %}text-gray-400{% endif %}">🌅</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium {% if show_sunrise %}text-orange-600 dark:text-orange-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">
+                                Quyosh chiqishi
+                            </span>
+                            {% if show_sunrise %}
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                                    Bomdod tugaydi
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <span class="font-mono text-sm font-semibold {% if show_sunrise %}text-orange-600 dark:text-orange-400{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                        {{ quyosh_time }}
+                    </span>
+                </div>
             </div>
-            {% endfor %}
-          </div>
-        </div>
+            {% endif %}
 
-      </div>
+        {% endfor %}
+    </div>
+</div>
+            <!-- HAFTALIK STATISTIKA -->
+            <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Haftalik statistika</h2>
+                <div class="flex items-end gap-2 h-20">
+                    {% for day in week_data %}
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <div class="w-full rounded-t-md transition-all
+                            {% if day.pct == 100 %}bg-green-500
+                            {% elif day.pct >= 60 %}bg-yellow-400
+                            {% elif day.pct > 0 %}bg-red-400
+                            {% else %}bg-gray-200 dark:bg-gray-700{% endif %}"
+                            style="height: {{ day.pct }}%; min-height: 4px;">
+                        </div>
+                        <span class="text-[10px] text-gray-400">{{ day.day }}</span>
+                        <span class="text-[10px] font-bold text-gray-600 dark:text-gray-300">{{ day.count }}/5</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
     </main>
 </div>
+
 <!-- INSOF MODALI -->
 <div id="insof-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
-  <div class="bg-white dark:bg-brand-surf w-full max-w-sm rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-    <div class="p-5 text-center border-b border-gray-100 dark:border-gray-800">
-      <div class="text-3xl mb-2">⚖️</div>
-      <h3 class="font-bold text-gray-900 dark:text-white text-lg"><span id="modal-prayer-name"></span> namozi</h3>
-      <p class="text-xs text-gray-500 mt-1">Vaqti o'tib ketibdi. Insof bilan qachon o'qiganingizni belgilang:</p>
+    <div class="bg-white dark:bg-brand-surf w-full max-w-sm rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="p-5 text-center border-b border-gray-100 dark:border-gray-800">
+            <div class="text-3xl mb-2">⚖️</div>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg"><span id="modal-prayer-name"></span> namozi</h3>
+            <p class="text-xs text-gray-500 mt-1">Vaqti o'tib ketibdi. Insof bilan qachon o'qiganingizni belgilang:</p>
+        </div>
+        <form id="insof-form" method="POST" class="p-3 space-y-2">
+            {% csrf_token %}
+            <button type="submit" name="manual_status" value="on_time" class="w-full p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-medium hover:bg-green-100 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span> Boshida (Eng afzal vaqt)
+            </button>
+            <button type="submit" name="manual_status" value="late" class="w-full p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 font-medium hover:bg-yellow-100 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-yellow-400"></span> O'rtasida (Kechikib)
+            </button>
+            <button type="submit" name="manual_status" value="makruh" class="w-full p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-medium hover:bg-red-100 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span> Oxirida (Makruh vaqt)
+            </button>
+            <button type="submit" name="manual_status" value="qaza" class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-gray-500"></span> Qazo qilib o'qidim
+            </button>
+            <button type="button" onclick="closeInsofModal()" class="w-full p-3 mt-2 rounded-xl text-gray-500 font-medium hover:bg-gray-50 dark:hover:bg-brand-card transition text-sm">
+                Bekor qilish
+            </button>
+        </form>
     </div>
-    <form id="insof-form" method="POST" class="p-3 space-y-2">
-      {% csrf_token %}
-      <button type="submit" name="manual_status" value="on_time" class="w-full p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-medium hover:bg-green-100 transition text-sm text-left flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-green-500"></span> Boshida (Eng afzal vaqt)
-      </button>
-      <button type="submit" name="manual_status" value="late" class="w-full p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 font-medium hover:bg-yellow-100 transition text-sm text-left flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-yellow-400"></span> O'rtasida (Kechikib)
-      </button>
-      <button type="submit" name="manual_status" value="makruh" class="w-full p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-medium hover:bg-red-100 transition text-sm text-left flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-red-500"></span> Oxirida (Makruh vaqt)
-      </button>
-      <button type="submit" name="manual_status" value="qaza" class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 transition text-sm text-left flex items-center gap-3">
-        <span class="w-3 h-3 rounded-full bg-gray-500"></span> Qazo qilib o'qidim
-      </button>
-      <button type="button" onclick="closeInsofModal()" class="w-full p-3 mt-2 rounded-xl text-gray-500 font-medium hover:bg-gray-50 dark:hover:bg-brand-card transition text-sm">
-        Bekor qilish
-      </button>
-    </form>
-  </div>
 </div>
 
 <script>
-  function openInsofModal(key, label) {
-    document.getElementById('modal-prayer-name').textContent = label;
-    document.getElementById('insof-form').action = `/ibodat/toggle/${key}/`;
-    document.getElementById('insof-modal').classList.remove('hidden');
-  }
-  function closeInsofModal() {
-    document.getElementById('insof-modal').classList.add('hidden');
-  }
-</script>
-<script>
-  const nextTime   = "{{ next_p.time|default:'' }}";
-  const currentEnd = "{{ current.end|default:'' }}";
+    function openInsofModal(key, label) {
+        document.getElementById('modal-prayer-name').textContent = label;
+        document.getElementById('insof-form').action = `/ibodat/toggle/${key}/`;
+        document.getElementById('insof-modal').classList.remove('hidden');
+    }
+    function closeInsofModal() {
+        document.getElementById('insof-modal').classList.add('hidden');
+    }
 
-  function toSec(t) {
-    if (!t) return 0;
-    const [h, m] = t.split(':').map(Number);
-    return h * 3600 + m * 60;
-  }
+    // Countdown
+    const nextTime = "{{ next_p.time|default:'' }}";
+    const currentEnd = "{{ current.end|default:'' }}";
 
-  function fmtDiff(target) {
-    const now = new Date();
-    const cur = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    let diff = toSec(target) - cur;
-    if (diff < 0) diff += 86400;
-    const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-    const s = String(diff % 60).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  }
+    function toSec(t) {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 3600 + m * 60;
+    }
 
-  function tick() {
-    const mc = document.getElementById('main-cd');
-    if (mc && currentEnd) mc.textContent = fmtDiff(currentEnd) + ' qoldi';
-  }
+    function fmtDiff(target) {
+        const now = new Date();
+        const cur = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        let diff = toSec(target) - cur;
+        if (diff < 0) diff += 86400;
+        const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+        const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+        const s = String(diff % 60).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
 
-  tick();
-  setInterval(tick, 1000);
+    function tick() {
+        const mc = document.getElementById('main-cd');
+        if (mc && currentEnd) mc.textContent = fmtDiff(currentEnd) + ' qoldi';
+    }
 
-  document.getElementById('theme-btn').addEventListener('click', () => {
-    const html = document.documentElement;
-    html.classList.toggle('dark');
-    localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
-  });
+    tick();
+    setInterval(tick, 1000);
 </script>
 {% endblock %}

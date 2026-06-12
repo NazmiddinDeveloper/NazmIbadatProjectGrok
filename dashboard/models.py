@@ -47,3 +47,12 @@ class Shift(models.Model):
 
     def __str__(self):
         return f"{self.user} | {self.date} | {self.shift_type}"
+    
+class DailyQuest(models.Model):
+    date = models.DateField()
+    title = models.CharField(max_length=150)
+    description = models.TextField(blank=True)
+    target_type = models.CharField(max_length=50)   # 'prayers', 'tasks', 'memorize_ayah'
+    target_value = models.IntegerField()
+    xp_reward = models.IntegerField(default=100)
+    is_active = models.BooleanField(default=True)
