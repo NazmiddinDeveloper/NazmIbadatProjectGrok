@@ -48,7 +48,8 @@
       {% if p.current %}
         bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700
       {% elif p.is_done %}
-        {% if p.status == 'on_time' %}bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900
+        {% if p.status == 'jamoat' %}bg-white shadow-[0_0_10px_rgba(255,255,255,0.6)] border-gray-200
+        {% elif p.status == 'on_time' %}bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900
         {% elif p.status == 'late' %}bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-900
         {% else %}bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900{% endif %}
       {% else %}
@@ -58,7 +59,8 @@
       <span class="font-medium
         {% if p.current %}text-green-700 dark:text-green-400
         {% elif p.is_done %}
-          {% if p.status == 'on_time' %}text-green-600 dark:text-green-500
+          {% if p.status == 'jamoat' %}text-black font-bold
+          {% elif p.status == 'on_time' %}text-green-600 dark:text-green-500
           {% elif p.status == 'late' %}text-yellow-600 dark:text-yellow-500
           {% else %}text-red-500 dark:text-red-400{% endif %}
         {% else %}text-gray-500 dark:text-gray-400{% endif %}">
@@ -67,7 +69,8 @@
       <span class="font-mono text-gray-400 dark:text-gray-500">{{ p.time }}</span>
       {% if p.is_done %}
         <span class="
-          {% if p.status == 'on_time' %}text-green-500
+          {% if p.status == 'jamoat' %}text-black
+          {% elif p.status == 'on_time' %}text-green-500
           {% elif p.status == 'late' %}text-yellow-500
           {% else %}text-red-400{% endif %}">✓</span>
       {% elif p.current %}

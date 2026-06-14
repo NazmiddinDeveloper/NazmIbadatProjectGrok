@@ -1,28 +1,84 @@
+  {% load static %}
 <!DOCTYPE html>
 <html lang="uz" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SA'Y{% endblock %}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&display=swap" rel="stylesheet">
-  <style>
-    .font-quran { font-family: 'Amiri Quran', serif; }
-    .font-quran { font-family: 'Amiri Quran', serif; }
+  
+<style>
+    /* Ochiq CDN serverdan Uthmanic shriftini ulash */
+    @font-face {
+        font-family: 'UthmanicHafs';
+        src: url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.woff2') format('woff2'),
+             url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.woff') format('woff'),
+             url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+    }
 
-    /* Tajvid ranglari */
-    .tajvid-qalqala { color: #dc2626; }        /* Qizil */
-    .tajvid-madd    { color: #2563eb; }        /* Ko'k */
-    .tajvid-ghunna  { color: #16a34a; }        /* Yashil */
-    .tajvid-ikhfa   { color: #d97706; }        /* Sariq */
-    .tajvid-izhar   { color: #7c3aed; }        /* Binafsha */
+    /* Shriftni qo'llash */
+    .font-quran { 
+        font-family: 'UthmanicHafs', Arial, sans-serif; 
+        line-height: 2.2; 
+    }
 
-    /* Dark mode */
-    .dark .tajvid-qalqala { color: #f87171; }
-    .dark .tajvid-madd    { color: #60a5fa; }
-    .dark .tajvid-ghunna  { color: #4ade80; }
-    .dark .tajvid-ikhfa   { color: #fbbf24; }
-    .dark .tajvid-izhar   { color: #a78bfa; }
-  </style>
+    /* === TAJWEED RANGLARI (Quran.com API klasslariga 100% moslandi) === */
+    tajweed {
+        display: inline;
+    }
+
+    /* 1. Silent letter (O'qilmaydigan harflar) - Kulrang */
+    tajweed.ham_wasl,
+    tajweed.slnt,
+    tajweed.laam_shamsiyah,
+    tajweed.idgham_wo_ghunnah {
+        color: #A0A5A8 !important;
+    }
+
+    /* 2. Normal madd (2 harakat) - To'q tilla/Xantal rang */
+    tajweed.madda_normal {
+        color: #B78C3F !important;
+    }
+
+    /* 3. Separated madd (2/4/6 harakat) - Apelsin rang (Orange) */
+    tajweed.madda_permissible {
+        color: #E67E22 !important;
+    }
+
+    /* 4. Connected madd (4/5 harakat) - Qizil */
+    tajweed.madda_obligatory {
+        color: #FF0000 !important;
+    }
+
+    /* 5. Necessary madd (6 harakat) - To'q qizil */
+    tajweed.madda_necessary {
+        color: #8B0000 !important;
+    }
+
+    /* 6. Ghunna / Ikhfa' - Yashil 
+    tajweed.ghunnah,
+    tajweed.ikhafa,
+    tajweed.ikhafa_shafawi,
+    tajweed.idgham_ghunnah,
+    tajweed.iqlab,
+    tajweed.idgham_mutajanisayn,
+    tajweed.idgham_mutaqaribayn {
+        color: #00B300 !important;
+    }
+    */
+    /* 7. Qalqala (Echo) - Havorang (Cyan) */
+    tajweed.qalaqah {
+        color: #00BFFF !important;
+    }
+
+    /* 8. Tafkhim (Heavy/Yo'g'on harflar) - Ko'k (Blue) */
+    tajweed.tafkhim {
+        color: #0040FF !important;
+    }
+</style>
+
   <script>
     if (localStorage.getItem('theme') === 'light') {
       document.documentElement.classList.remove('dark');
@@ -181,6 +237,37 @@
   </nav>
 
 <script>
+  // Quran.com API'sida yetishmayotgan Tafkhim (Yo'g'on) harflarni avtomatik bo'yash
+  document.addEventListener("DOMContentLoaded", function() {
+      function applyTafkhim(node) {
+          if (node.nodeType === 3) { 
+              const text = node.nodeValue;
+              
+              // MANTIQ: 
+              // 1. خ, ص, ض, ط, ظ, غ, ق harflari va ularning harakatlari
+              // 2. "ر" (Ro) harfi, agar unda Fatha (\u064E), Damma (\u064F), Fathatan (\u064B) yoki Dammatan (\u064C) bo'lsa
+              const tafkhimRegex = /([خصضطظغق][\u064B-\u065F\u0670]*|ر[\u0651]?[\u064E\u064F\u064B\u064C][\u064B-\u065F\u0670]*)/g;
+              
+              if (tafkhimRegex.test(text)) {
+                  const wrapper = document.createElement('span');
+                  wrapper.innerHTML = text.replace(tafkhimRegex, '<tajweed class="tafkhim">$1</tajweed>');
+                  
+                  while (wrapper.firstChild) {
+                      node.parentNode.insertBefore(wrapper.firstChild, node);
+                  }
+                  node.parentNode.removeChild(node);
+              }
+          } 
+          else if (node.nodeType === 1 && node.nodeName.toLowerCase() !== 'tajweed') {
+              Array.from(node.childNodes).forEach(applyTafkhim);
+          }
+      }
+
+      document.querySelectorAll('.font-quran').forEach(el => {
+          Array.from(el.childNodes).forEach(applyTafkhim);
+      });
+  });
+
   // Sticky bar uchun — faqat authenticated bo'lsa ishlaydi
   (function() {
     const data = {{ times_json|default:"{}" }};

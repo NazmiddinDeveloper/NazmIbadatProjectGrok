@@ -16,9 +16,7 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button id="tajvid-btn" onclick="toggleTajvid()" class="text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-medium">
-        🎨 Tajvid
-      </button>
+      
       <div class="text-xl font-bold text-green-600 dark:text-brand-accent font-quran" dir="rtl">
         {{ surah_arabic }}
       </div>
@@ -57,7 +55,7 @@
         
         <!-- Arabcha matn -->
         <p id="ayah-text" class="font-quran text-gray-900 dark:text-white text-right leading-[2.5]" dir="rtl" style="font-size: 2.2rem;">
-          {{ text_colored }}
+          {{ tajweed_text|safe }}
         </p>
 
         <!-- Transkripsiya (Yashiringan) -->

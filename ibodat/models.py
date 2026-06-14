@@ -29,11 +29,12 @@ class PrayerTime(models.Model):
 
 class PrayerLog(models.Model):
     STATUS_CHOICES = (
-        ('on_time', 'Boshida'),   # Yashil
-        ('late',    'O\'rtasida'), # Sariq
-        ('makruh',  'Oxirida'),   # Qizil (Qazo emas!)
-        ('qaza',    'Qazo'),      # Qora (Vaqti o'tib ketgan)
-        ('missed',  'O\'tkazib'), # O'qilmagan
+        ('jamoat',  'Jamoat bilan'),  # <-- YANGI QO'SHILDI
+        ('on_time', 'Boshida'),       # Yashil
+        ('late',    'O\'rtasida'),    # Sariq
+        ('makruh',  'Oxirida'),       # Qizil
+        ('qaza',    'Qazo'),          # Qora
+        ('missed',  'O\'tkazib'),     # O'qilmagan
     )
 
     user       = models.ForeignKey(

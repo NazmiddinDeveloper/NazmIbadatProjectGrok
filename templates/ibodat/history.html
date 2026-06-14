@@ -75,7 +75,8 @@
                   <div class="flex justify-between gap-0.5">
                      {% for dot in day.prayer_dots %}
                      <div class="w-1.5 h-1.5 rounded-full 
-                        {% if dot == 'on_time' %}bg-green-500
+                        {% if dot == 'jamoat' %}bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]
+                        {% elif dot == 'on_time' %}bg-green-500
                         {% elif dot == 'late' %}bg-yellow-400
                         {% elif dot == 'qaza' %}bg-red-500
                         {% else %}bg-gray-300 dark:bg-gray-600{% endif %}">
@@ -122,25 +123,29 @@
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">{{ p.label }}</span>
 
-                  {% if p.is_done %}
-                    {% if p.status == 'on_time' %}
-                    <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">✓ Boshida · {{ p.done_at }}</span>
-                    {% elif p.status == 'late' %}
-                    <span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">✓ O'rtasida · {{ p.done_at }}</span>
-                    {% elif p.status == 'makruh' %}
-                    <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">✓ Oxirida · {{ p.done_at }}</span>
-                    {% elif p.status == 'qaza' %}
-                    <span class="text-[10px] bg-gray-800 text-white px-2 py-0.5 rounded-full">🌋 Qazo · {{ p.done_at }}</span>
+                  <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" class="transition hover:scale-105 focus:outline-none text-left">
+                    {% if p.is_done %}
+                      {% if p.status == 'jamoat' %}
+                      <span class="text-[10px] bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.8)] px-2.5 py-0.5 rounded-full font-bold">🕌 Jamoat · {{ p.done_at }}</span>
+                      {% elif p.status == 'on_time' %}
+                      <span class="text-[10px] bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full">✓ Boshida · {{ p.done_at }}</span>
+                      {% elif p.status == 'late' %}
+                      <span class="text-[10px] bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full">✓ O'rtasida · {{ p.done_at }}</span>
+                      {% elif p.status == 'makruh' %}
+                      <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full">✓ Oxirida · {{ p.done_at }}</span>
+                      {% elif p.status == 'qaza' %}
+                      <span class="text-[10px] bg-gray-800 text-white px-2.5 py-0.5 rounded-full">🌋 Qazo · {{ p.done_at }}</span>
+                      {% endif %}
+                    {% elif selected_date < today %}
+                      <span class="text-[10px] bg-red-50 text-red-600 border border-red-200 dark:border-red-800 px-2.5 py-0.5 rounded-full">🔥 O'tkazildi (Tahrirlash)</span>
+                    {% elif p.is_pending %}
+                      <span class="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-2.5 py-0.5 rounded-full">⚪ Kutilyapti</span>
+                    {% elif p.current %}
+                      <span class="text-[10px] bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-bold">Hozirgi namoz (Belgilash)</span>
+                    {% else %}
+                      <span class="text-[10px] bg-red-50 text-red-600 border border-red-200 dark:border-red-800 px-2.5 py-0.5 rounded-full">🔥 O'tkazildi (Tahrirlash)</span>
                     {% endif %}
-                  {% elif selected_date < today %}
-                    <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔥 O'tkazildi</span>
-                  {% elif p.is_pending %}
-                    <span class="text-[10px] bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">⚪ Kutilyapti</span>
-                  {% elif p.current %}
-                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Hozirgi namoz</span>
-                  {% else %}
-                    <span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">🔥 O'tkazildi</span>
-                  {% endif %}
+                  </button>
                 </div>
                 <div class="flex items-center gap-1 mt-1.5">
                   <span class="text-[10px] text-gray-400 font-mono w-10">{{ p.time }}</span>
@@ -162,7 +167,56 @@
   </div>
 </div>
 
+<!-- INSOF MODALI (Tarix uchun) -->
+<div id="insof-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
+    <div class="bg-white dark:bg-brand-surf w-full max-w-sm rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="p-5 text-center border-b border-gray-100 dark:border-gray-800">
+            <div class="text-3xl mb-2">⚖️</div>
+            <h3 class="font-bold text-gray-900 dark:text-white text-lg"><span id="modal-prayer-name"></span> namozi</h3>
+            <p class="text-xs text-gray-500 mt-1">Namozni qanday holatda o'qiganingizni belgilang:</p>
+        </div>
+        <form id="insof-form" method="POST" class="p-3 space-y-2">
+            {% csrf_token %}
+            <!-- MUHIM: Qaysi sanani tahrirlayotganimizni yuboramiz -->
+            <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+            
+            <button type="submit" name="manual_status" value="jamoat" class="w-full p-3 mb-2 rounded-xl bg-white dark:bg-gray-100 text-black shadow-[0_0_15px_rgba(255,255,255,0.8)] font-bold hover:scale-[1.02] transition text-sm text-left flex items-center gap-3 border border-gray-200">
+                <span class="text-xl">🕌</span> Jamoat bilan (Eng afzal)
+            </button>
+            <button type="submit" name="manual_status" value="on_time" class="w-full p-3 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-medium hover:bg-green-100 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span> Boshida (Eng afzal vaqt)
+            </button>
+            <button type="submit" name="manual_status" value="late" class="w-full p-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 font-medium hover:bg-yellow-100 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-yellow-400"></span> O'rtasida (Kechikib)
+            </button>
+            <button type="submit" name="manual_status" value="makruh" class="w-full p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-medium hover:bg-red-100 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span> Oxirida (Makruh vaqt)
+            </button>
+            <button type="submit" name="manual_status" value="qaza" class="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 transition text-sm text-left flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-gray-500"></span> Qazo qilib o'qidim
+            </button>
+            
+            <button type="submit" name="manual_status" value="cancel" class="w-full p-3 mt-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition text-sm text-center border border-red-200 dark:border-red-800">
+                ❌ Belgilashni bekor qilish
+            </button>
+
+            <button type="button" onclick="closeInsofModal()" class="w-full p-3 mt-2 rounded-xl text-gray-500 font-medium hover:bg-gray-50 dark:hover:bg-brand-card transition text-sm">
+                Yopish
+            </button>
+        </form>
+    </div>
+</div>
+
 <script>
+    function openInsofModal(key, label) {
+        document.getElementById('modal-prayer-name').textContent = label;
+        document.getElementById('insof-form').action = `/ibodat/toggle/${key}/`;
+        document.getElementById('insof-modal').classList.remove('hidden');
+    }
+    function closeInsofModal() {
+        document.getElementById('insof-modal').classList.add('hidden');
+    }
+    
   document.getElementById('theme-btn').addEventListener('click', () => {
     const html = document.documentElement;
     html.classList.toggle('dark');

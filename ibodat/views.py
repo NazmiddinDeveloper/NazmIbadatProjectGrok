@@ -5,6 +5,9 @@ from django.utils import timezone
 from .models import PrayerLog, PRAYER_ORDER, PRAYER_CHOICES
 from .utils import get_prayer_zones, get_done_status
 from dashboard.models import Task
+from django.core.cache import cache
+import requests
+
 
 PRAYER_API = "https://namoz-vaqti.uz/index.php?format=json&region=toshkent-shahri&period=today"
 
@@ -26,13 +29,21 @@ PRAYER_ICONS = {
 
 
 def get_prayer_data():
-    try:
-        import requests
-        r = requests.get(PRAYER_API, timeout=6)
-        r.raise_for_status()
-        return r.json()
-    except Exception:
-        return None
+    # Keshdan 'prayer_data_today' degan kalit bilan qidiramiz
+    data = cache.get('prayer_data_today')
+    
+    if not data:
+        # Agar keshda bo'lmasa, API ga murojaat qilamiz
+        try:
+            r = requests.get(PRAYER_API, timeout=6)
+            r.raise_for_status()
+            data = r.json()
+            # Ma'lumotni keshga saqlaymiz (masalan, 12 soatga - 43200 soniya)
+            cache.set('prayer_data_today', data, timeout=43200)
+        except Exception as e:
+            print(f"Prayer API Error: {e}")
+            return None
+    return data
 
 
 def build_prayers(times, current_key, done_set, done_at_map, status_map):
@@ -184,38 +195,38 @@ def toggle_prayer(request, prayer_key):
     if request.method != 'POST':
         return redirect('ibodat')
 
-    today = timezone.localdate()
-    now = timezone.localtime().strftime('%H:%M')
-    data = get_prayer_data()
-    times = data['today']['times'] if data else {}
+    # Formadan sana kelsa o'qib olamiz, kelmasa bugungi kunni olamiz
+    date_str = request.POST.get('date')
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            target_date = timezone.localdate()
+    else:
+        target_date = timezone.localdate()
 
+    now = timezone.localtime().strftime('%H:%M')
+    
+    # target_date bo'yicha bazadan qidiramiz yoki yaratamiz
     log, _ = PrayerLog.objects.get_or_create(
-        user=request.user, date=today, prayer=prayer_key
+        user=request.user, date=target_date, prayer=prayer_key
     )
 
-    if not log.is_done:
-        manual_status = request.POST.get('manual_status')
-        if manual_status:
-            log.is_done = True
-            log.done_at = now
-            log.status = manual_status
-        else:
-            prayer_keys = PRAYER_ORDER
-            idx = prayer_keys.index(prayer_key)
-            start = times.get(prayer_key, '00:00')
-            end = times.get(prayer_keys[idx + 1], '23:59') if idx + 1 < len(prayer_keys) else '23:59'
-            zones = get_prayer_zones(start, end)
-            log.is_done = True
-            log.done_at = now
-            log.status = get_done_status(now, zones)
-    else:
+    manual_status = request.POST.get('manual_status')
+    
+    if manual_status == 'cancel':
         log.is_done = False
         log.done_at = None
         log.status = 'missed'
-
+    elif manual_status:
+        log.is_done = True
+        if not log.done_at:
+            log.done_at = now
+        log.status = manual_status
+        
     log.save()
+    # Qaysi sahifadan kelgan bo'lsa (ibodat yoki tarix), o'sha sahifaga qaytaradi
     return redirect(request.META.get('HTTP_REFERER', 'ibodat'))
-
 
 @login_required
 def history(request):
@@ -259,9 +270,12 @@ def history(request):
             prayer_dots.append(st)
             if st == 'missed':
                 is_ruined = True
-            if st != 'on_time':
+            if st not in ['on_time', 'jamoat']:  # Jamoat ham perfect hisoblanadi
                 all_prayers_perfect = False
-            if st == 'on_time':
+                
+            if st == 'jamoat':
+                p_score += 15  # Jamoat uchun BONUS ball!
+            elif st == 'on_time':
                 p_score += 10
             elif st == 'late':
                 p_score += 7
