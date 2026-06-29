@@ -58,18 +58,27 @@ def surah_detail(request, surah_id):
 
     if not cached_data:
         try:
+            # 1. Sura haqida umumiy ma'lumot va arabcha matn
             r_info = requests.get(f'https://api.alquran.cloud/v1/surah/{surah_id}', timeout=5)
             surah_data = r_info.json()['data']
 
-            # Barcha oyatlar uchun Tajweed ma'lumotini olish
+            # 2. Barcha oyatlar uchun Tajweed ma'lumotini olish
             r_tajweed = requests.get(
                 f'https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?chapter_number={surah_id}',
                 timeout=8
             )
             tajweed_data = r_tajweed.json().get('verses', [])
             
-            cached_data = {'surah_data': surah_data, 'tajweed_data': tajweed_data}
-            # Sura ichidagi ma'lumotlarni ham 30 kunga keshlaymiz
+            # 3. O'zbekcha tarjimani olish (Shayx Muhammad Sodiq Muhammad Yusuf - uz.sodik)
+            r_trans = requests.get(f'https://api.alquran.cloud/v1/surah/{surah_id}/uz.sodik', timeout=5)
+            translation_data = r_trans.json()['data']['ayahs']
+            
+            cached_data = {
+                'surah_data': surah_data, 
+                'tajweed_data': tajweed_data,
+                'translation_data': translation_data
+            }
+            # Sura ichidagi ma'lumotlarni 30 kunga keshlaymiz
             cache.set(cache_key, cached_data, timeout=86400 * 30)
         except Exception as e:
             print(f"Surah detail xatosi: {e}")
@@ -77,6 +86,8 @@ def surah_detail(request, surah_id):
     else:
         surah_data = cached_data['surah_data']
         tajweed_data = cached_data['tajweed_data']
+        # Eski keshda tarjima bo'lmasa, xato bermasligi uchun .get() ishlatamiz
+        translation_data = cached_data.get('translation_data', [])
 
     progress = AyahMemorization.objects.filter(user=request.user, surah_number=surah_id)
     memo_dict = {p.ayah_number: p for p in progress}
@@ -89,9 +100,13 @@ def surah_detail(request, surah_id):
         # Tajweed HTML ni olish
         tajweed_html = tajweed_data[i]['text_uthmani_tajweed'] if i < len(tajweed_data) else ayah['text']
         
+        # Tarjimani olish
+        translation_text = translation_data[i]['text'] if i < len(translation_data) else ""
+        
         ayahs.append({
             'number': num,
             'text_colored': mark_safe(tajweed_html),
+            'translation': translation_text,
             'is_memorized': p.is_memorized if p else False,
             'repeats': p.repeats if p else 0,
         })
@@ -100,7 +115,6 @@ def surah_detail(request, surah_id):
         'surah': surah_data,
         'ayahs': ayahs
     })
-
 
 @login_required
 def memorize_ayah(request, surah_id, ayah_id):
