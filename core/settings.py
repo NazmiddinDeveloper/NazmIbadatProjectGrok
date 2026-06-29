@@ -29,6 +29,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['nazmibadatprojectgrok.onrender.com']
 
+
+
 # Application definition
 
 INSTALLED_APPS = [
