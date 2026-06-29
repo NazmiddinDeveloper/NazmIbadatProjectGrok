@@ -53,7 +53,7 @@ def quran_home(request):
 
 @login_required
 def surah_detail(request, surah_id):
-    cache_key = f'surah_detail_data_{surah_id}'
+    cache_key = f'surah_detail_data_v2_{surah_id}'   # ← v2 qo'shildi
     cached_data = cache.get(cache_key)
 
     if not cached_data:
@@ -69,9 +69,11 @@ def surah_detail(request, surah_id):
             )
             tajweed_data = r_tajweed.json().get('verses', [])
             
-            # 3. O'zbekcha tarjimani olish (Shayx Muhammad Sodiq Muhammad Yusuf - uz.sodik)
-            r_trans = requests.get(f'https://api.alquran.cloud/v1/surah/{surah_id}/uz.sodik', timeout=5)
-            translation_data = r_trans.json()['data']['ayahs']
+            # 3. O'zbekcha tarjimani olish (Alauddin Mansur - quranenc.com)
+            r_trans = requests.get(f'https://quranenc.com/api/v1/translation/sura/uzbek_mansour/{surah_id}', timeout=5)
+            translation_list = r_trans.json().get('result', [])
+            # Aya raqami bo'yicha dict qilamiz — tartib mos kelmay qolsa ham xato bermaydi
+            translation_data = {int(item['aya']): item['translation'] for item in translation_list}
             
             cached_data = {
                 'surah_data': surah_data, 
@@ -86,8 +88,7 @@ def surah_detail(request, surah_id):
     else:
         surah_data = cached_data['surah_data']
         tajweed_data = cached_data['tajweed_data']
-        # Eski keshda tarjima bo'lmasa, xato bermasligi uchun .get() ishlatamiz
-        translation_data = cached_data.get('translation_data', [])
+        translation_data = cached_data.get('translation_data', {})   # ← list emas, dict
 
     progress = AyahMemorization.objects.filter(user=request.user, surah_number=surah_id)
     memo_dict = {p.ayah_number: p for p in progress}
@@ -97,12 +98,9 @@ def surah_detail(request, surah_id):
         num = ayah['numberInSurah']
         p = memo_dict.get(num)
 
-        # Tajweed HTML ni olish
         tajweed_html = tajweed_data[i]['text_uthmani_tajweed'] if i < len(tajweed_data) else ayah['text']
         
-        # Tarjimani olish
-        translation_text = translation_data[i]['text'] if i < len(translation_data) else ""
-        
+        translation_text = translation_data.get(num, "")   # ← shu qatorni o'zgartiring
         ayahs.append({
             'number': num,
             'text_colored': mark_safe(tajweed_html),

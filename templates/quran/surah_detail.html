@@ -99,17 +99,17 @@
 <script>
   let tajvidOn = true;
   function toggleTajvid() {
-    tajvidOn = !tajvidOn;
-    const spans = document.querySelectorAll('.font-quran span, .font-quran font');
-    spans.forEach(s => {
-      if (!tajvidOn) {
-        s.style.setProperty('color', 'inherit', 'important');
-      } else {
-        s.style.color = '';
-      }
-    });
-    document.getElementById('tajvid-btn').textContent =
-      tajvidOn ? '🎨 Tajvid: Yoqiq' : '⬜ Tajvid: O\'chiq';
-  }
+      tajvidOn = !tajvidOn;
+      const tajweedTags = document.querySelectorAll('.font-quran tajweed');   // ← span/font emas, tajweed
+      tajweedTags.forEach(s => {
+        if (!tajvidOn) {
+          s.style.setProperty('color', 'inherit', 'important');
+        } else {
+          s.style.removeProperty('color');   // ← !important bilan qo'yilgani uchun shu usul ishonchli
+        }
+      });
+      document.getElementById('tajvid-btn').textContent =
+        tajvidOn ? '🎨 Tajvid: Yoqiq' : '⬜ Tajvid: O\'chiq';
+}
 </script>
 {% endblock %}
