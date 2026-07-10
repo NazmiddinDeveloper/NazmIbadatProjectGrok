@@ -15,12 +15,11 @@
     </div>
     
     <div class="flex items-center gap-3">
-      <!-- TAJVID TOGGLE BUTTON -->
-      <button id="tajvid-btn" onclick="toggleTajvid()"
-        class="text-[11px] px-2.5 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 font-medium whitespace-nowrap">
-        🎨 Tajvid: Yoqiq
+      <!-- TAJVID TOGGLE -->
+      <button onclick="toggleTajvid()" class="tajvid-btn">
+        ⬜ Tajvid: O'chiq
       </button>
-      <!-- SURA ARABCHA NOMI (Faqat kompyuterda chiqadi, mobilni xunuk qilmaslik uchun yashirildi) -->
+        <!-- SURA ARABCHA NOMI (Faqat kompyuterda chiqadi, mobilni xunuk qilmaslik uchun yashirildi) -->
       <div class="text-xl font-bold text-green-600 dark:text-brand-accent hidden sm:block" dir="rtl">{{ surah.name }}</div>
     </div>
   </header>
@@ -95,21 +94,4 @@
   </main>
 </div>
 
-<!-- TAJVID SCRIPT -->
-<script>
-  let tajvidOn = true;
-  function toggleTajvid() {
-      tajvidOn = !tajvidOn;
-      const tajweedTags = document.querySelectorAll('.font-quran tajweed');   // ← span/font emas, tajweed
-      tajweedTags.forEach(s => {
-        if (!tajvidOn) {
-          s.style.setProperty('color', 'inherit', 'important');
-        } else {
-          s.style.removeProperty('color');   // ← !important bilan qo'yilgani uchun shu usul ishonchli
-        }
-      });
-      document.getElementById('tajvid-btn').textContent =
-        tajvidOn ? '🎨 Tajvid: Yoqiq' : '⬜ Tajvid: O\'chiq';
-}
-</script>
 {% endblock %}

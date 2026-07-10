@@ -77,6 +77,8 @@
     tajweed.tafkhim {
         color: #0040FF !important;
     }
+    /* TAJVIDNI O'CHIRISH UCHUN KLASS */
+    body.tajweed-off tajweed { color: inherit !important; }
 </style>
 
   <script>
@@ -269,6 +271,43 @@
 
       document.querySelectorAll('.font-quran').forEach(el => {
           Array.from(el.childNodes).forEach(applyTafkhim);
+      });
+  });
+  // === TAJVID ON/OFF MANTIQI (GLOBAL) ===
+  function toggleTajvid() {
+      const body = document.body;
+      body.classList.toggle('tajweed-off');
+      const isOff = body.classList.contains('tajweed-off');
+      
+      // Xotiraga saqlaymiz
+      localStorage.setItem('tajweedState', isOff ? 'off' : 'on');
+      
+      // Barcha sahifadagi tajvid tugmalarini yangilaymiz
+      document.querySelectorAll('.tajvid-btn').forEach(btn => {
+          btn.innerHTML = isOff ? '⬜ Tajvid: O\'chiq' : '🎨 Tajvid: Yoqiq';
+          if(isOff) {
+              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition";
+          } else {
+              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold transition";
+          }
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+      // Default holat 'off' (o'chiq)
+      const state = localStorage.getItem('tajweedState') || 'off'; 
+      
+      if (state === 'off') {
+          document.body.classList.add('tajweed-off');
+      }
+      
+      document.querySelectorAll('.tajvid-btn').forEach(btn => {
+          btn.innerHTML = state === 'off' ? '⬜ Tajvid: O\'chiq' : '🎨 Tajvid: Yoqiq';
+          if(state === 'off') {
+              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition";
+          } else {
+              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold transition";
+          }
       });
   });
 </script>
