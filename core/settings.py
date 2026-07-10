@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'dashboard',
     'ibodat',
     'quran',
-    'gamification',
     'statistika',
 ]
 

@@ -37,38 +37,6 @@ class DailyQuest(models.Model):
         ('failed', 'Bajarilmadi'),
     )
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_quests')
-    date = models.DateField(default=timezone.localdate)
-    
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    target_type = models.CharField(max_length=50)   # 'prayer', 'task', 'hifz', 'streak'
-    target_value = models.IntegerField(default=1)
-    current_progress = models.IntegerField(default=0)
-    
-    xp_reward = models.IntegerField(default=50)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    
-    is_auto_generated = models.BooleanField(default=True)  # Avto yoki admin tomonidan
-    motivational_message = models.TextField(blank=True)    # Xavotir yoki hamd xabari
-
-    class Meta:
-        unique_together = ('user', 'date', 'target_type')
-        ordering = ['-date']
-
-    def __str__(self):
-        return f"{self.user.username} | {self.date} | {self.title}"
-    
-
-
-
-class DailyQuest(models.Model):
-    STATUS_CHOICES = (
-        ('pending', 'Kutilmoqda'),
-        ('completed', 'Bajarildi'),
-        ('failed', 'Bajarilmadi'),
-    )
-
     TARGET_TYPES = (
         ('prayer', 'Namoz'),
         ('task', 'Vazifa'),

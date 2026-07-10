@@ -179,6 +179,17 @@
        {% endif %}">
       💼 Smenalar
     </a>
+    {% url 'statistika' as url_statistika %}
+
+    <a href="{{ url_statistika }}"
+      class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
+      {% if request.path == url_statistika %}
+        bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
+      {% else %}
+        text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
+      {% endif %}">
+      📊 Statistika
+    </a>
 
   </nav>
 
@@ -222,6 +233,10 @@
     <a href="{% url 'prayer_history' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_prayer_history %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
       <span class="text-xl">📅</span>
       <span class="text-[9px] font-bold">Tarix</span>
+    </a>
+    <a href="{% url 'statistika' %}" class="flex flex-col items-center gap-1 w-full py-2 text-gray-400">
+      <span class="text-xl">📊</span>
+      <span class="text-[9px] font-bold">Statistika</span>
     </a>
   </nav>
 
