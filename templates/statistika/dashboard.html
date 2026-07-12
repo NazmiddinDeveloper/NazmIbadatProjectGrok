@@ -83,46 +83,80 @@
         </div>
       </div>
 
-      <!-- HAFTANING QISQACHA KO'RINISHI -->
-      <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-        <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Oxirgi 7 kun</h2>
-        <div class="space-y-3">
-          {% for day in days %}
-          {% if forloop.counter > 23 %}
-          <div class="flex items-center gap-3">
-            <div class="w-20 text-xs text-gray-500 shrink-0 {% if day.is_today %}font-bold text-green-600 dark:text-green-400{% endif %}">
-              {% if day.is_today %}Bugun{% else %}{{ day.date|date:"d M, D" }}{% endif %}
-            </div>
-            <div class="flex-1 space-y-1.5">
-              <!-- Namoz bar -->
-              <div class="flex items-center gap-2">
-                <span class="text-[9px] w-12 text-gray-400 shrink-0">🌙 {{ day.prayer_done }}/5</span>
-                <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div class="h-full bg-green-500 rounded-full" style="width: {{ day.prayer_pct }}%"></div>
+      <!-- BATAFSIL KUNLIK TARIX (YANGI) -->
+        <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+          <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Batafsil kunlik tarix</h2>
+          <div class="space-y-3">
+            <!-- reversed orqali eng oxirgi kun (bugun) eng tepada chiqadi -->
+            {% for day in days reversed %}
+            <div class="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden">
+              
+              <!-- Accordion Header -->
+              <button onclick="toggleAccordion('day-{{ forloop.counter }}')" class="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-brand-card hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <div class="flex items-center gap-3">
+                  <div class="w-24 text-xs text-gray-500 text-left {% if day.is_today %}font-bold text-green-600 dark:text-green-400{% endif %}">
+                    {% if day.is_today %}Bugun{% else %}{{ day.date|date:"d M, D" }}{% endif %}
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] px-2 py-0.5 rounded-full {% if day.task_done == day.task_total and day.task_total > 0 %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+                      ✅ {{ day.task_done }}/{{ day.task_total }} vazifa
+                    </span>
+                  </div>
                 </div>
+                <span class="text-gray-400 text-xs transition-transform duration-200" id="icon-day-{{ forloop.counter }}">▼</span>
+              </button>
+
+              <!-- Accordion Content (Tasklar ro'yxati) -->
+              <div id="day-{{ forloop.counter }}" class="hidden p-3 bg-white dark:bg-brand-surf border-t border-gray-100 dark:border-gray-800">
+                {% if day.tasks_list %}
+                  <ul class="space-y-2">
+                    {% for t in day.tasks_list %}
+                    <li class="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-brand-card transition">
+                      <div class="flex items-center gap-2">
+                        <span class="{% if t.is_completed %}text-green-500{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+                          {% if t.is_completed %}✓{% else %}○{% endif %}
+                        </span>
+                        <span class="text-gray-900 dark:text-gray-200 {% if t.is_completed %}line-through opacity-60{% endif %}">
+                          {{ t.title }}
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-md">{{ t.category }}</span>
+                        <span class="text-[10px] text-green-600 dark:text-green-400 font-medium">+{{ t.xp_reward }} XP</span>
+                      </div>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <div class="text-xs text-gray-400 text-center py-3">Bu kunda vazifalar yo'q</div>
+                {% endif %}
               </div>
-              <!-- Vazifa bar -->
-              <div class="flex items-center gap-2">
-                <span class="text-[9px] w-12 text-gray-400 shrink-0">✅ {{ day.task_done }}/{{ day.task_total }}</span>
-                <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                  <div class="h-full bg-blue-500 rounded-full" style="width: {{ day.task_pct }}%"></div>
-                </div>
-              </div>
+
             </div>
-            <!-- Umumiy ball -->
-            <div class="w-10 text-right shrink-0">
-              <span class="text-xs font-bold
-                {% if day.overall >= 70 %}text-green-600 dark:text-green-400
-                {% elif day.overall >= 40 %}text-yellow-600 dark:text-yellow-400
-                {% else %}text-gray-400{% endif %}">
-                {{ day.overall }}%
-              </span>
-            </div>
+            {% endfor %}
           </div>
-          {% endif %}
-          {% endfor %}
         </div>
+
       </div>
+    </main>
+  </div>
+
+  <!-- Accordion ishlashi uchun JS -->
+  <script>
+    function toggleAccordion(id) {
+      const content = document.getElementById(id);
+      const icon = document.getElementById('icon-' + id);
+      
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    }
+  </script>
+  {% endblock %}
 
     </div>
   </main>

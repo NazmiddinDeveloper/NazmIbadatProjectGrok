@@ -7,11 +7,29 @@ from .forms import TaskForm
 from ibodat.views import get_prayer_data
 import calendar
 from datetime import datetime
+from statistika.services import calculate_daily_efficiency # <-- YANGI QO'SHILDI
 
 @login_required
 def home(request):
     user = request.user
     today = timezone.localdate()
+
+    # =====================================================================
+    # YANGI QO'SHILGAN QISM: Bajarilmagan vazifalarni bugunga o'tkazish
+    # =====================================================================
+    overdue_tasks = Task.objects.filter(user=user, due_date__lt=today, is_completed=False)
+    if overdue_tasks.exists():
+        # Qaysi sanalardan vazifalar ko'chayotganini saqlab olamiz
+        dates_to_update = set(overdue_tasks.values_list('due_date', flat=True))
+        
+        # Vazifalarni bugunga o'tkazamiz
+        overdue_tasks.update(due_date=today)
+        
+        # Eski kunlar va bugungi kun statistikasini qayta hisoblaymiz
+        for d in dates_to_update:
+            calculate_daily_efficiency(user, d)
+        calculate_daily_efficiency(user, today)
+    # =====================================================================
 
     if request.method == 'POST':
         form = TaskForm(request.POST)
@@ -49,7 +67,6 @@ def home(request):
 
     prayers_mini = build_prayers(times_json, current_key, done_set, done_at_map, status_map) if times_json else []
 
-    # === QUYOSH CHIQISHI WIDGETI (faqat Bomdod vaqti ichida ko'rinadi) ===
     show_sunrise_widget = False
     quyosh_time = times_json.get('quyosh')
 
@@ -78,11 +95,11 @@ def home(request):
         'times_json': times_json,
         'prayers_mini': prayers_mini,
         'next_prayer': next_prayer,
-        'show_sunrise_widget': show_sunrise_widget,   # ← Qo'shildi
+        'show_sunrise_widget': show_sunrise_widget,
     }
     return render(request, 'dashboard/home.html', context)
 
-
+# ... (qolgan kodlar o'zgarishsiz qoladi)
 @login_required
 def toggle_task(request, task_id):
     if request.method != 'POST':

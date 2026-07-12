@@ -6,7 +6,6 @@ from dashboard.models import Task
 from ibodat.models import PrayerLog
 from quran.models import AyahMemorization
 
-
 @login_required
 def statistics_dashboard(request):
     user  = request.user
@@ -28,6 +27,19 @@ def statistics_dashboard(request):
         task_done   = tasks.filter(is_completed=True).count()
         task_pct    = int((task_done / task_total) * 100) if task_total > 0 else 0
 
+        # =====================================================================
+        # YANGI QO'SHILGAN QISM: Tasklarni nomma-nom ro'yxatga olish
+        # =====================================================================
+        day_tasks_list = []
+        for t in tasks:
+            day_tasks_list.append({
+                'title': t.title,
+                'category': t.get_category_display(),
+                'is_completed': t.is_completed,
+                'xp_reward': t.xp_reward
+            })
+        # =====================================================================
+
         # Quran
         quran_repeats = AyahMemorization.objects.filter(
             user=user, last_practiced__date=day
@@ -47,6 +59,7 @@ def statistics_dashboard(request):
             'task_pct':   task_pct,
             'task_done':  task_done,
             'task_total': task_total,
+            'tasks_list': day_tasks_list,  # <-- Ro'yxatni templatega yuboramiz
             'quran_pct':  quran_pct,
             'overall':    overall,
         })
@@ -56,22 +69,11 @@ def statistics_dashboard(request):
     total_tasks    = Task.objects.filter(user=user, is_completed=True).count()
     total_memorized = AyahMemorization.objects.filter(user=user, is_memorized=True).count()
 
-    # Bu hafta
-    week_start = today - timedelta(days=6)
-    week_prayers = PrayerLog.objects.filter(
-        user=user, date__gte=week_start, is_done=True
-    ).count()
-    week_tasks = Task.objects.filter(
-        user=user, due_date__gte=week_start, is_completed=True
-    ).count()
-
     context = {
         'days':             days,
         'total_prayers':    total_prayers,
         'total_tasks':      total_tasks,
         'total_memorized':  total_memorized,
-        'week_prayers':     week_prayers,
-        'week_tasks':       week_tasks,
         'today':            today,
     }
     return render(request, 'statistika/dashboard.html', context)
