@@ -46,91 +46,100 @@
             {% endif %}
            
 
-<!-- NAMOZ VAQTLARI -->
-<div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-        <h2 class="text-sm font-bold text-gray-900 dark:text-white">Bugungi namoz vaqtlari</h2>
-        <a href="{% url 'prayer_history' %}" class="text-xs text-green-600 dark:text-brand-accent hover:underline">Tarix →</a>
-    </div>
+            <!-- NAMOZ VAQTLARI -->
+            <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-gray-900 dark:text-white">Bugungi namoz vaqtlari</h2>
+                    <a href="{% url 'prayer_history' %}" class="text-xs text-green-600 dark:text-brand-accent hover:underline">Tarix →</a>
+                </div>
 
-    <div class="divide-y divide-gray-100 dark:divide-gray-800">
+                <div class="divide-y divide-gray-100 dark:divide-gray-800">
 
-        {% for p in prayers %}
+                    {% for p in prayers %}
 
-            <!-- Namoz qatori -->
-            <div class="px-5 py-3 flex items-center justify-between {% if p.current %}bg-green-50 dark:bg-green-900/10{% endif %}">
-                
-                <!-- Chap qism: Icon + Nom + Vaqt -->
-                <div class="flex items-center gap-3">
-                    <span class="text-xl">{{ p.icon }}</span>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-medium text-gray-900 dark:text-white">{{ p.label }}</span>
-                            <span class="text-xs text-gray-400 font-mono">{{ p.time }}</span>
+                        <!-- Namoz qatori -->
+                        <div class="px-5 py-3 flex items-center justify-between {% if p.current %}bg-green-50 dark:bg-green-900/10{% endif %}">
+                            
+                            <!-- Chap qism: Icon + Nom + Vaqt -->
+                            <div class="flex items-center gap-3">
+                                <span class="text-xl">{{ p.icon }}</span>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ p.label }}</span>
+                                        <span class="text-xs text-gray-400 font-mono">{{ p.time }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- O'ng qism: Holat / Toggle -->
+                            <div>
+                                {% if p.is_done %}
+                                    <!-- BELGILANGAN NAMOZNI QAYTA TAHRIRLASH UCHUN TUGMA -->
+                                    <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" class="transition hover:scale-105 focus:outline-none">
+                                        {% if p.status == 'jamoat' %}
+                                            <span class="text-[10px] bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.8)] px-2.5 py-0.5 rounded-full font-bold">✨ Jamoat</span>
+                                        {% elif p.status == 'on_time' %}
+                                            <span class="text-[10px] bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full">✓ Boshida</span>
+                                        {% elif p.status == 'late' %}
+                                            <span class="text-[10px] bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full">✓ O'rtasida</span>
+                                        {% elif p.status == 'makruh' %}
+                                            <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full">✓ Oxirida</span>
+                                        {% elif p.status == 'qaza' %}
+                                            <span class="text-[10px] bg-gray-700 text-white px-2.5 py-0.5 rounded-full">🌋 Qazo</span>
+                                        {% endif %}
+                                    </button>
+                                {% elif p.is_pending %}
+                                    <span class="text-[10px] bg-gray-700 text-gray-300 px-2.5 py-0.5 rounded-full">Kutilmoqda</span>
+                                {% elif p.needs_modal %}
+                                    {% if p.key == 'tahajjud' %}
+                                        <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
+                                                class="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                            Ixtiyoriy
+                                        </button>
+                                    {% else %}
+                                        <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
+                                                class="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white transition">
+                                            Vaqt o'tdi
+                                        </button>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- HAR DOIM MODAL OCHILADI -->
+                                    <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
+                                            class="w-7 h-7 rounded-full border-2 border-gray-400 dark:border-gray-600 hover:border-green-500 flex items-center justify-center transition">
+                                    </button>
+                                {% endif %}
+                            </div>
+
                         </div>
-                    </div>
-                </div>
 
-                               <!-- O'ng qism: Holat / Toggle -->
-                <div>
-                    {% if p.is_done %}
-                        <!-- BELGILANGAN NAMOZNI QAYTA TAHRIRLASH UCHUN TUGMA -->
-                        <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" class="transition hover:scale-105 focus:outline-none">
-                            {% if p.status == 'jamoat' %}
-                                <span class="text-[10px] bg-white text-black shadow-[0_0_10px_rgba(255,255,255,0.8)] px-2.5 py-0.5 rounded-full font-bold">✨ Jamoat</span>
-                            {% elif p.status == 'on_time' %}
-                                <span class="text-[10px] bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full">✓ Boshida</span>
-                            {% elif p.status == 'late' %}
-                                <span class="text-[10px] bg-yellow-100 text-yellow-700 px-2.5 py-0.5 rounded-full">✓ O'rtasida</span>
-                            {% elif p.status == 'makruh' %}
-                                <span class="text-[10px] bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full">✓ Oxirida</span>
-                            {% elif p.status == 'qaza' %}
-                                <span class="text-[10px] bg-gray-700 text-white px-2.5 py-0.5 rounded-full">🌋 Qazo</span>
-                            {% endif %}
-                        </button>
-                    {% elif p.needs_modal %}
-                        {% if p.key == 'tahajjud' %}
-                            <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
-                                    class="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                                Ixtiyoriy
-                            </button>
-                        {% else %}
-                            <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
-                                    class="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white transition">
-                                Vaqt o'tdi
-                            </button>
-                        {% endif %}
-                </div>
-
-            </div>
-
-            <!-- QUYOSH CHIQISHI (Bomdod va Peshin orasida) -->
-            {% if p.key == 'bomdod' %}
-            <div class="px-5 py-1 {% if show_sunrise %}bg-orange-50 dark:bg-orange-900/10{% else %}bg-gray-50 dark:bg-gray-800/40{% endif %} border-y border-gray-200 dark:border-gray-700">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xl {% if show_sunrise %}text-orange-500{% else %}text-gray-400{% endif %}">🌅</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-medium {% if show_sunrise %}text-orange-600 dark:text-orange-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">
-                                Quyosh chiqishi
-                            </span>
-                            {% if show_sunrise %}
-                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
-                                    Bomdod tugaydi
+                        <!-- QUYOSH CHIQISHI (Bomdod va Peshin orasida) -->
+                        {% if p.key == 'bomdod' %}
+                        <div class="px-5 py-1 {% if show_sunrise %}bg-orange-50 dark:bg-orange-900/10{% else %}bg-gray-50 dark:bg-gray-800/40{% endif %} border-y border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xl {% if show_sunrise %}text-orange-500{% else %}text-gray-400{% endif %}">🌅</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium {% if show_sunrise %}text-orange-600 dark:text-orange-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">
+                                            Quyosh chiqishi
+                                        </span>
+                                        {% if show_sunrise %}
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                                                Bomdod tugaydi
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="font-mono text-sm font-semibold {% if show_sunrise %}text-orange-600 dark:text-orange-400{% else %}text-gray-600 dark:text-gray-300{% endif %}">
+                                    {{ quyosh_time }}
                                 </span>
-                            {% endif %}
+                            </div>
                         </div>
-                    </div>
-                    <span class="font-mono text-sm font-semibold {% if show_sunrise %}text-orange-600 dark:text-orange-400{% else %}text-gray-600 dark:text-gray-300{% endif %}">
-                        {{ quyosh_time }}
-                    </span>
+                        {% endif %}
+
+                    {% endfor %}
                 </div>
             </div>
-            {% endif %}
 
-        {% endfor %}
-    </div>
-</div>
             <!-- HAFTALIK STATISTIKA -->
             <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
                 <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Haftalik statistika</h2>
