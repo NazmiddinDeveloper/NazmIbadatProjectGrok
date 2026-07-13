@@ -34,16 +34,14 @@ def quran_home(request):
 
 @login_required
 def surah_detail(request, surah_id):
-    cache_key = f'surah_detail_mushaf_v1_{surah_id}'
+    cache_key = f'surah_detail_mushaf_v2_{surah_id}'
     cached_data = cache.get(cache_key)
 
     if not cached_data:
         try:
-            # 1. Sura haqida umumiy ma'lumot
             r_info = requests.get(f'https://api.alquran.cloud/v1/surah/{surah_id}', timeout=5)
             surah_data = r_info.json()['data']
 
-            # 2. Barcha oyatlar uchun so'zma-so'z ma'lumot (Quran.com API)
             words_data = {}
             page = 1
             while True:
@@ -58,8 +56,6 @@ def surah_detail(request, surah_id):
                     
                 for v in verses:
                     ayah_num = int(v['verse_key'].split(':')[1])
-                    
-                    # Oyat ichidagi so'zlarni qatorlarga ajratamiz
                     lines = {}
                     for w in v['words']:
                         l_num = w['line_number']
@@ -67,7 +63,6 @@ def surah_detail(request, surah_id):
                             lines[l_num] = []
                         lines[l_num].append(w.get('text_uthmani', ''))
                     
-                    # Qatorlarni birlashtirib, <br> bilan ajratamiz (Mushafdek ko'rinishi uchun)
                     formatted_text = "<br>".join([" ".join(lines[k]) for k in sorted(lines.keys())])
                     words_data[ayah_num] = formatted_text
 
@@ -76,7 +71,6 @@ def surah_detail(request, surah_id):
                     break
                 page += 1
             
-            # 3. O'zbekcha tarjima
             r_trans = requests.get(f'https://quranenc.com/api/v1/translation/sura/uzbek_mansour/{surah_id}', timeout=5)
             translation_list = r_trans.json().get('result', [])
             translation_data = {int(item['aya']): item['translation'] for item in translation_list}
@@ -108,7 +102,8 @@ def surah_detail(request, surah_id):
         
         ayahs.append({
             'number': num,
-            'text_colored': mark_safe(formatted_html),
+            'text_standard': ayah['text'], # <-- Eski versiyadagi oddiy matn
+            'text_mushaf': mark_safe(formatted_html), # <-- Mushaf qatorlari
             'translation': translation_text,
             'is_memorized': p.is_memorized if p else False,
             'repeats': p.repeats if p else 0,
@@ -124,15 +119,12 @@ def memorize_ayah(request, surah_id, ayah_id):
     verse_key = f"{surah_id}:{ayah_id}"
     
     try:
-        # 1. Oyat qaysi sahifada ekanligini aniqlash
         r_ayah = requests.get(f"https://api.quran.com/api/v4/verses/by_key/{verse_key}?fields=page_number", timeout=5)
         page_number = r_ayah.json()['verse']['page_number']
         
-        # 2. O'sha SAHIFADAGI barcha so'zlarni olish (Butun sahifani chizish uchun)
         r_page = requests.get(f"https://api.quran.com/api/v4/verses/by_page/{page_number}?words=true&word_fields=text_uthmani,line_number", timeout=8)
         page_verses = r_page.json().get('verses', [])
         
-        # 3. So'zlarni qatorlarga (line_number) ajratish
         lines_dict = {}
         for verse in page_verses:
             v_key = verse['verse_key']
@@ -143,18 +135,21 @@ def memorize_ayah(request, surah_id, ayah_id):
                 
                 lines_dict[l_num].append({
                     'text': word.get('text_uthmani', ''),
-                    'is_target': v_key == verse_key, # Biz yodlayotgan oyatmi?
+                    'is_target': v_key == verse_key,
                 })
         
         mushaf_lines = [lines_dict[k] for k in sorted(lines_dict.keys())]
         
-        # Sura nomi va transkripsiya
         r_info = requests.get(f'https://api.alquran.cloud/v1/ayah/{verse_key}/en.transliteration', timeout=5)
         ayah_info = r_info.json()['data']
         surah_name = ayah_info['surah']['englishName']
         surah_arabic = ayah_info['surah']['name']
         transliteration = ayah_info['text']
         total_ayahs = ayah_info['surah']['numberOfAyahs']
+
+        # Eski versiyadagi oddiy bitta oyat matnini olish
+        r_ayah_std = requests.get(f'https://api.alquran.cloud/v1/ayah/{verse_key}/quran-uthmani', timeout=5)
+        ayah_text_standard = r_ayah_std.json()['data']['text']
         
     except Exception as e:
         print(f"Memorize ayah xatosi: {e}")
@@ -207,7 +202,8 @@ def memorize_ayah(request, surah_id, ayah_id):
     context = {
         'surah_id': surah_id,
         'ayah_id': ayah_id,
-        'mushaf_lines': mushaf_lines,
+        'ayah_text_standard': ayah_text_standard, # <-- Oddiy matn
+        'mushaf_lines': mushaf_lines,             # <-- Mushaf sahifasi
         'page_number': page_number,
         'transliteration': transliteration,
         'surah_name': surah_name,
