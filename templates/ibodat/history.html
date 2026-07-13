@@ -19,7 +19,12 @@
       <div class="max-w-2xl mx-auto space-y-4">
 
         <!-- 30 KUNLIK KALENDAR -->
-        {% for day in calendar %}
+        <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+          <h2 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Oxirgi 30 kun</h2>
+          
+          <!-- MANA SHU GRID QUTISI O'CHIB KETGAN EDI 👇 -->
+          <div class="grid grid-cols-5 sm:grid-cols-7 gap-2">
+            {% for day in calendar %}
             <a href="?date={{ day.date }}"
                class="relative flex flex-col justify-between p-1.5 rounded-xl border transition-all aspect-square overflow-hidden
                {% if day.selected %}ring-2 ring-green-500 scale-105 z-10{% endif %}
@@ -89,8 +94,9 @@
                {% endif %}
             </a>
             {% endfor %}
+          </div> <!-- GRID QUTISI YOPILDI -->
 
-         <!-- Izoh (Legend) -->
+          <!-- Izoh (Legend) -->
           <div class="flex flex-wrap items-center gap-4 mt-4 bg-gray-50 dark:bg-brand-card p-3 rounded-xl border border-gray-200 dark:border-gray-800">
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">✨</span> Firdavs (100% ideal)</span>
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">🔥</span> Jahannam (Qazo bor)</span>
