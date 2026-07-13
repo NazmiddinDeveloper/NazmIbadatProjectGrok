@@ -6,37 +6,14 @@ from django.utils.safestring import mark_safe
 from .models import AyahMemorization
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-import re
-
-# ==================== YORDAMCHI FUNKSIYA ====================
-def remove_inline_styles(html):
-    """Inline style atributlarini HTML'dan olib tashlash"""
-    return re.sub(r' style="[^"]*"', '', html)
-
-def get_tajweed_ayah(surah: int, ayah: int):
-    verse_key = f"{surah}:{ayah}"
-    url = f"https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?verse_key={verse_key}"
-    
-    try:
-        response = requests.get(url, timeout=6)
-        data = response.json()
-        if data.get("verses"):
-            return data["verses"][0].get("text_uthmani_tajweed", "")
-    except Exception as e:
-        print(f"Tajweed API xatosi: {e}")
-    return None
-
 
 @login_required
 def quran_home(request):
-    # Suralar ro'yxatini keshdan qidiramiz
     surahs = cache.get('all_surahs')
-    
     if not surahs:
         try:
             r = requests.get('https://api.alquran.cloud/v1/surah', timeout=5)
             surahs = r.json()['data']
-            # Suralar ro'yxatini 30 kunga keshga saqlaymiz
             cache.set('all_surahs', surahs, timeout=86400 * 30)
         except:
             surahs = []
@@ -57,58 +34,81 @@ def quran_home(request):
 
 @login_required
 def surah_detail(request, surah_id):
-    cache_key = f'surah_detail_data_v2_{surah_id}'   # ← v2 qo'shildi
+    cache_key = f'surah_detail_mushaf_v1_{surah_id}'
     cached_data = cache.get(cache_key)
 
     if not cached_data:
         try:
-            # 1. Sura haqida umumiy ma'lumot va arabcha matn
+            # 1. Sura haqida umumiy ma'lumot
             r_info = requests.get(f'https://api.alquran.cloud/v1/surah/{surah_id}', timeout=5)
             surah_data = r_info.json()['data']
 
-            # 2. Barcha oyatlar uchun Tajweed ma'lumotini olish
-            r_tajweed = requests.get(
-                f'https://api.quran.com/api/v4/quran/verses/uthmani_tajweed?chapter_number={surah_id}',
-                timeout=8
-            )
-            tajweed_data = r_tajweed.json().get('verses', [])
+            # 2. Barcha oyatlar uchun so'zma-so'z ma'lumot (Quran.com API)
+            words_data = {}
+            page = 1
+            while True:
+                r_words = requests.get(
+                    f'https://api.quran.com/api/v4/verses/by_chapter/{surah_id}?words=true&word_fields=text_uthmani,line_number&per_page=50&page={page}',
+                    timeout=8
+                ).json()
+                
+                verses = r_words.get('verses', [])
+                if not verses:
+                    break
+                    
+                for v in verses:
+                    ayah_num = int(v['verse_key'].split(':')[1])
+                    
+                    # Oyat ichidagi so'zlarni qatorlarga ajratamiz
+                    lines = {}
+                    for w in v['words']:
+                        l_num = w['line_number']
+                        if l_num not in lines:
+                            lines[l_num] = []
+                        lines[l_num].append(w.get('text_uthmani', ''))
+                    
+                    # Qatorlarni birlashtirib, <br> bilan ajratamiz (Mushafdek ko'rinishi uchun)
+                    formatted_text = "<br>".join([" ".join(lines[k]) for k in sorted(lines.keys())])
+                    words_data[ayah_num] = formatted_text
+
+                pagination = r_words.get('pagination', {})
+                if page >= pagination.get('total_pages', 1):
+                    break
+                page += 1
             
-            # 3. O'zbekcha tarjimani olish (Alauddin Mansur - quranenc.com)
+            # 3. O'zbekcha tarjima
             r_trans = requests.get(f'https://quranenc.com/api/v1/translation/sura/uzbek_mansour/{surah_id}', timeout=5)
             translation_list = r_trans.json().get('result', [])
-            # Aya raqami bo'yicha dict qilamiz — tartib mos kelmay qolsa ham xato bermaydi
             translation_data = {int(item['aya']): item['translation'] for item in translation_list}
             
             cached_data = {
                 'surah_data': surah_data, 
-                'tajweed_data': tajweed_data,
+                'words_data': words_data,
                 'translation_data': translation_data
             }
-            # Sura ichidagi ma'lumotlarni 30 kunga keshlaymiz
             cache.set(cache_key, cached_data, timeout=86400 * 30)
         except Exception as e:
             print(f"Surah detail xatosi: {e}")
             return redirect('quran_home')
     else:
         surah_data = cached_data['surah_data']
-        tajweed_data = cached_data['tajweed_data']
-        translation_data = cached_data.get('translation_data', {})   # ← list emas, dict
+        words_data = cached_data['words_data']
+        translation_data = cached_data.get('translation_data', {})
 
     progress = AyahMemorization.objects.filter(user=request.user, surah_number=surah_id)
     memo_dict = {p.ayah_number: p for p in progress}
 
     ayahs = []
-    for i, ayah in enumerate(surah_data['ayahs']):
+    for ayah in surah_data['ayahs']:
         num = ayah['numberInSurah']
         p = memo_dict.get(num)
 
-        tajweed_html = tajweed_data[i]['text_uthmani_tajweed'] if i < len(tajweed_data) else ayah['text']
-        tajweed_html = remove_inline_styles(tajweed_html)  # ← Inline style'larni olib tashlash
+        formatted_html = words_data.get(num, ayah['text'])
+        translation_text = translation_data.get(num, "")
         
-        translation_text = translation_data.get(num, "")   # ← shu qatorni o'zgartiring
         ayahs.append({
             'number': num,
-            'text_colored': mark_safe(tajweed_html),
+            'text_colored': mark_safe(formatted_html),
             'translation': translation_text,
             'is_memorized': p.is_memorized if p else False,
             'repeats': p.repeats if p else 0,
@@ -121,26 +121,47 @@ def surah_detail(request, surah_id):
 
 @login_required
 def memorize_ayah(request, surah_id, ayah_id):
+    verse_key = f"{surah_id}:{ayah_id}"
+    
     try:
-        r = requests.get(f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/quran-uthmani', timeout=5)
-        ayah_data = r.json()['data']
-
-        # Tajweed matnini olish
-        tajweed_html = get_tajweed_ayah(surah_id, ayah_id)
-        if not tajweed_html:
-            tajweed_html = ayah_data['text']  # Agar Tajweed bo'lmasa oddiy matn
+        # 1. Oyat qaysi sahifada ekanligini aniqlash
+        r_ayah = requests.get(f"https://api.quran.com/api/v4/verses/by_key/{verse_key}?fields=page_number", timeout=5)
+        page_number = r_ayah.json()['verse']['page_number']
         
-        tajweed_html = remove_inline_styles(tajweed_html)  # ← Inline style'larni olib tashlash
-
-        # Transkripsiya
-        r_trans = requests.get(f'https://api.alquran.cloud/v1/ayah/{surah_id}:{ayah_id}/en.transliteration', timeout=5)
-        transliteration = r_trans.json()['data']['text']
+        # 2. O'sha SAHIFADAGI barcha so'zlarni olish (Butun sahifani chizish uchun)
+        r_page = requests.get(f"https://api.quran.com/api/v4/verses/by_page/{page_number}?words=true&word_fields=text_uthmani,line_number", timeout=8)
+        page_verses = r_page.json().get('verses', [])
+        
+        # 3. So'zlarni qatorlarga (line_number) ajratish
+        lines_dict = {}
+        for verse in page_verses:
+            v_key = verse['verse_key']
+            for word in verse['words']:
+                l_num = word['line_number']
+                if l_num not in lines_dict:
+                    lines_dict[l_num] = []
+                
+                lines_dict[l_num].append({
+                    'text': word.get('text_uthmani', ''),
+                    'is_target': v_key == verse_key, # Biz yodlayotgan oyatmi?
+                })
+        
+        mushaf_lines = [lines_dict[k] for k in sorted(lines_dict.keys())]
+        
+        # Sura nomi va transkripsiya
+        r_info = requests.get(f'https://api.alquran.cloud/v1/ayah/{verse_key}/en.transliteration', timeout=5)
+        ayah_info = r_info.json()['data']
+        surah_name = ayah_info['surah']['englishName']
+        surah_arabic = ayah_info['surah']['name']
+        transliteration = ayah_info['text']
+        total_ayahs = ayah_info['surah']['numberOfAyahs']
+        
     except Exception as e:
         print(f"Memorize ayah xatosi: {e}")
         return redirect('surah_detail', surah_id=surah_id)
 
-    audio_url = f"https://cdn.islamic.network/quran/audio/128/ar.alafasy/{ayah_data['number']}.mp3"
-    audio_url_muaiqly = f"https://cdn.islamic.network/quran/audio/128/ar.mahermuaiqly/{ayah_data['number']}.mp3"
+    audio_url = f"https://cdn.islamic.network/quran/audio/128/ar.alafasy/{ayah_info['number']}.mp3"
+    audio_url_muaiqly = f"https://cdn.islamic.network/quran/audio/128/ar.mahermuaiqly/{ayah_info['number']}.mp3"
 
     obj, _ = AyahMemorization.objects.get_or_create(
         user=request.user,
@@ -186,22 +207,20 @@ def memorize_ayah(request, surah_id, ayah_id):
     context = {
         'surah_id': surah_id,
         'ayah_id': ayah_id,
-        'text_colored': mark_safe(tajweed_html),           # ← Asosiy matn
-        'tajweed_text': mark_safe(tajweed_html),           # ← Template uchun qo‘shimcha
+        'mushaf_lines': mushaf_lines,
+        'page_number': page_number,
         'transliteration': transliteration,
-        'surah_name': ayah_data['surah']['englishName'],
-        'surah_arabic': ayah_data['surah']['name'],
+        'surah_name': surah_name,
+        'surah_arabic': surah_arabic,
         'audio_url': audio_url,
         'audio_url_muaiqly': audio_url_muaiqly,
         'obj': obj,
         'prev_ayah': ayah_id - 1 if ayah_id > 1 else None,
-        'next_ayah': ayah_id + 1 if ayah_id < ayah_data['surah']['numberOfAyahs'] else None,
+        'next_ayah': ayah_id + 1 if ayah_id < total_ayahs else None,
     }
     return render(request, 'quran/memorize.html', context)
 
-
-# ==================== AJAX FUNKSIYALAR ====================
-
+# ... (qolgan API funksiyalar o'zgarishsiz qoladi)
 @login_required
 @require_POST
 def api_repeat(request, surah_id, ayah_id):
@@ -211,7 +230,6 @@ def api_repeat(request, surah_id, ayah_id):
     obj.repeats += 1
     obj.save(update_fields=['repeats'])
     return JsonResponse({'repeats': obj.repeats, 'status': 'ok'})
-
 
 @login_required
 @require_POST
@@ -231,7 +249,6 @@ def api_memorize(request, surah_id, ayah_id):
         'repeats': obj.repeats,
         'status': 'ok'
     })
-
 
 @login_required
 @require_POST

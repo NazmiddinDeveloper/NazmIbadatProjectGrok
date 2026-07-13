@@ -4,7 +4,6 @@
 {% block content %}
 <div class="flex-1 flex flex-col overflow-hidden">
   
-  <!-- TOPBAR (Mobil versiyaga moslangan ixcham header) -->
   <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0">
     <div class="flex items-center gap-2">
       <a href="{% url 'quran_home' %}" class="p-2 rounded-lg bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition text-sm">←</a>
@@ -15,27 +14,19 @@
     </div>
     
     <div class="flex items-center gap-3">
-      <!-- TAJVID TOGGLE -->
-      <button onclick="toggleTajvid()" class="tajvid-btn">
-        ⬜ Tajvid: O'chiq
-      </button>
-        <!-- SURA ARABCHA NOMI (Faqat kompyuterda chiqadi, mobilni xunuk qilmaslik uchun yashirildi) -->
-      <div class="text-xl font-bold text-green-600 dark:text-brand-accent hidden sm:block" dir="rtl">{{ surah.name }}</div>
+      <div class="text-xl font-bold text-green-600 dark:text-brand-accent hidden sm:block font-quran" dir="rtl">{{ surah.name }}</div>
     </div>
   </header>
 
-  <!-- ASOSIY MATN QISMI -->
   <main class="flex-1 overflow-y-auto p-4 pb-24 md:pb-5">
     <div class="max-w-3xl mx-auto space-y-4">
       
-      <!-- Bismillah -->
       {% if surah.number != 1 and surah.number != 9 %}
-      <div class="text-center py-4 text-xl md:text-2xl font-bold text-gray-900 dark:text-white" dir="rtl">
+      <div class="text-center py-4 text-2xl md:text-3xl font-bold text-gray-900 dark:text-white font-quran" dir="rtl">
         بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
       </div>
       {% endif %}
 
-      <!-- OYATLAR RO'YXATI -->
       <div class="space-y-4">
         {% for ayah in ayahs %}
         <div class="p-4 md:p-5 rounded-2xl border transition-all 
@@ -44,7 +35,6 @@
           
           <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
             
-            <!-- Chap/Tepa tomon: Raqam va Yodlash tugmasi -->
             <div class="flex sm:flex-col items-center justify-between sm:justify-start w-full sm:w-auto gap-3 shrink-0 border-b sm:border-b-0 pb-2 sm:pb-0 border-gray-100 dark:border-gray-800">
               <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold 
                 {% if ayah.is_memorized %}bg-green-500 text-white
@@ -60,21 +50,19 @@
               </a>
             </div>
 
-            <!-- O'ng/Past tomon: Arabcha matn va O'zbekcha tarjima -->
             <div class="flex-1 w-full space-y-3">
-              <!-- Arabcha matn -->
-              <div class="text-right">
-                <p class="text-lg md:text-xl leading-[2.2] md:leading-[2.5] text-gray-900 dark:text-white font-quran break-words" dir="rtl">
+              <!-- Arabcha matn (Mushaf qatorlari bilan) -->
+              <div class="text-center sm:text-right bg-[#fdfcf7] dark:bg-[#121c26] p-4 rounded-xl border border-[#e5e0d8] dark:border-gray-700 shadow-inner">
+                <p class="text-[24px] md:text-[30px] leading-[2.2] md:leading-[2.5] text-gray-900 dark:text-white font-quran break-words" dir="rtl">
                     {{ ayah.text_colored }}
                 </p>
                 {% if ayah.repeats > 0 %}
-                <div class="mt-2 text-[10px] text-gray-400 flex items-center justify-end gap-1">
+                <div class="mt-3 text-[10px] text-gray-400 flex items-center justify-center sm:justify-end gap-1">
                   <span>🔄 {{ ayah.repeats }} marta takrorlandi</span>
                 </div>
                 {% endif %}
               </div>
               
-              <!-- O'zbekcha Tarjima (Shayx Muhammad Sodiq Muhammad Yusuf) -->
               {% if ayah.translation %}
               <div class="text-left pt-2 border-t border-dashed border-gray-100 dark:border-gray-800">
                 <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-sans">
@@ -93,5 +81,4 @@
     </div>
   </main>
 </div>
-
 {% endblock %}
