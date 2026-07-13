@@ -1,17 +1,23 @@
 from datetime import datetime, timedelta
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from .models import PrayerLog, PRAYER_ORDER, PRAYER_CHOICES
-from .utils import get_prayer_zones, get_done_status
-from dashboard.models import Task
-from django.core.cache import cache
 import requests
 
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 
-PRAYER_API = "https://namoz-vaqti.uz/index.php?format=json&region=toshkent-shahri&period=today"
+from dashboard.models import Task
+from .models import PrayerLog, PRAYER_ORDER, PRAYER_CHOICES
+from .utils import get_prayer_zones, get_done_status
+
+# === API VA DOIMIY SOZLAMALAR ===
+PRAYER_API = "https://namoz-vaqti.uz"
+
+# API da Tahajjud bo'lmagani uchun ichki tartibni alohida belgilaymiz
+LOCAL_PRAYER_ORDER = ['tahajjud', 'bomdod', 'peshin', 'asr', 'shom', 'xufton']
 
 PRAYER_LABELS = {
+    'tahajjud': 'Tahajjud',
     'bomdod': 'Bomdod',
     'peshin': 'Peshin',
     'asr': 'Asr',
@@ -20,6 +26,7 @@ PRAYER_LABELS = {
 }
 
 PRAYER_ICONS = {
+    'tahajjud': '🌌',
     'bomdod': '🌙',
     'peshin': '☀️',
     'asr': '🌤',
@@ -29,17 +36,14 @@ PRAYER_ICONS = {
 
 
 def get_prayer_data():
-    # Keshdan 'prayer_data_today' degan kalit bilan qidiramiz
+    """Keshdan namoz vaqtlarini qidiradi, bo'lmasa API orqali yuklaydi."""
     data = cache.get('prayer_data_today')
-    
     if not data:
-        # Agar keshda bo'lmasa, API ga murojaat qilamiz
         try:
             r = requests.get(PRAYER_API, timeout=6)
             r.raise_for_status()
             data = r.json()
-            # Ma'lumotni keshga saqlaymiz (masalan, 12 soatga - 43200 soniya)
-            cache.set('prayer_data_today', data, timeout=43200)
+            cache.set('prayer_data_today', data, timeout=43200)  # 12 soatga keshlanadi
         except Exception as e:
             print(f"Prayer API Error: {e}")
             return None
@@ -47,19 +51,23 @@ def get_prayer_data():
 
 
 def build_prayers(times, current_key, done_set, done_at_map, status_map):
-    prayer_keys = PRAYER_ORDER
+    """Namozlar ro'yxatini va ularning joriy holatlarini (zonalarni) shakllantiradi."""
+    prayer_keys = LOCAL_PRAYER_ORDER
     result = []
     now_str = timezone.localtime().strftime('%H:%M')
     now_dt = datetime.strptime(now_str, "%H:%M")
 
     for i, key in enumerate(prayer_keys):
-        start = times.get(key, '00:00')
-
-        # Bomdod uchun maxsus tugash vaqti (Quyosh)
-        if key == 'bomdod':
-            end = times.get('quyosh', '06:30')
+        # Tahajjud uchun maxsus vaqt oralig'i (02:00 dan Bomdodgacha)
+        if key == 'tahajjud':
+            start = '02:00'
+            end = times.get('bomdod', '05:00')
         else:
-            end = times.get(prayer_keys[i + 1], '23:59') if i + 1 < len(prayer_keys) else '23:59'
+            start = times.get(key, '00:00')
+            if key == 'bomdod':
+                end = times.get('quyosh', '06:30')
+            else:
+                end = times.get(prayer_keys[i + 1], '23:59') if i + 1 < len(prayer_keys) else '23:59'
 
         zones = get_prayer_zones(start, end)
         is_done = key in done_set
@@ -81,7 +89,7 @@ def build_prayers(times, current_key, done_set, done_at_map, status_map):
                 status = 'missed'
 
         zone_color = 'green'
-        if key == current_key:
+        if key == current_key and not is_done:
             green_end = datetime.strptime(zones['green']['to'], "%H:%M")
             yellow_end = datetime.strptime(zones['yellow']['to'], "%H:%M")
             if now_dt > yellow_end:
@@ -110,6 +118,7 @@ def build_prayers(times, current_key, done_set, done_at_map, status_map):
 
 @login_required
 def ibodat(request):
+    """Asosiy ibodat sahifasi: bugungi namozlar, streak va haftalik statistika."""
     today = timezone.localdate()
     data = get_prayer_data()
 
@@ -122,7 +131,7 @@ def ibodat(request):
         current = data['today']['current']
         next_p = data['today']['next']
 
-    # Foydalanuvchi loglari
+    # Foydalanuvchining bugungi loglari
     logs = PrayerLog.objects.filter(user=request.user, date=today)
     done_set = set(logs.filter(is_done=True).values_list('prayer', flat=True))
     done_at_map = {l.prayer: str(l.done_at)[:5] for l in logs if l.done_at}
@@ -130,12 +139,14 @@ def ibodat(request):
 
     prayers = build_prayers(times, current.get('key'), done_set, done_at_map, status_map)
 
-    # === Streak hisoblash ===
+    # === Streak hisoblash (Faqat 5 vaqt farz namozlari asosida) ===
     streak = 0
     check_date = today - timedelta(days=1)
+    obligatory = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
+    
     while True:
         day_logs = PrayerLog.objects.filter(
-            user=request.user, date=check_date, is_done=True
+            user=request.user, date=check_date, is_done=True, prayer__in=obligatory
         )
         if day_logs.count() >= 5:
             streak += 1
@@ -149,7 +160,7 @@ def ibodat(request):
     for i in range(7):
         day = week_start + timedelta(days=i)
         count = PrayerLog.objects.filter(
-            user=request.user, date=day, is_done=True
+            user=request.user, date=day, is_done=True, prayer__in=obligatory
         ).count()
         week_data.append({
             'day': day.strftime('%a'),
@@ -160,7 +171,7 @@ def ibodat(request):
 
     done_today = len(done_set)
 
-    # === QUYOSH WIDGETI (faqat Bomdod vaqti ichida ko'rinadi) ===
+    # === QUYOSH WIDGETI ===
     show_sunrise = False
     quyosh_time = times.get('quyosh')
 
@@ -192,10 +203,10 @@ def ibodat(request):
 
 @login_required
 def toggle_prayer(request, prayer_key):
+    """Namoz holatini o'zgartirish (bajarildi/bajarilmadi) uchun POST so'rovi."""
     if request.method != 'POST':
         return redirect('ibodat')
 
-    # Formadan sana kelsa o'qib olamiz, kelmasa bugungi kunni olamiz
     date_str = request.POST.get('date')
     if date_str:
         try:
@@ -207,7 +218,6 @@ def toggle_prayer(request, prayer_key):
 
     now = timezone.localtime().strftime('%H:%M')
     
-    # target_date bo'yicha bazadan qidiramiz yoki yaratamiz
     log, _ = PrayerLog.objects.get_or_create(
         user=request.user, date=target_date, prayer=prayer_key
     )
@@ -225,11 +235,12 @@ def toggle_prayer(request, prayer_key):
         log.status = manual_status
         
     log.save()
-    # Qaysi sahifadan kelgan bo'lsa (ibodat yoki tarix), o'sha sahifaga qaytaradi
     return redirect(request.META.get('HTTP_REFERER', 'ibodat'))
+
 
 @login_required
 def history(request):
+    """30 kunlik kalendar ko'rinishidagi tarix va kunlik progress foizlari (XP)."""
     selected_date_str = request.GET.get('date', str(timezone.localdate()))
 
     try:
@@ -248,33 +259,43 @@ def history(request):
 
     prayers = build_prayers(times, current_key, done_set, done_at_map, status_map)
 
-    # 30 kunlik kalendar
+    # 30 kunlik kalendar tuzish
     today = timezone.localdate()
     calendar = []
     obligatory = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
 
     for i in range(29, -1, -1):
         day = today - timedelta(days=i)
-        is_past_day = day < today
-
+        
         day_logs = PrayerLog.objects.filter(user=request.user, date=day)
         log_dict = {l.prayer: l.status for l in day_logs}
 
         is_ruined = False
         all_prayers_perfect = True
         prayer_dots = []
+        
         p_score = 0
+        tahajjud_bonus = 0
 
+        # === TAHAJJUD TEKSHIRUVI (Maxsus bonus XP) ===
+        tahajjud_status = log_dict.get('tahajjud', 'missed')
+        if tahajjud_status in ['on_time', 'jamoat', 'late', 'makruh']:
+            prayer_dots.append('tahajjud_done')
+            tahajjud_bonus = 20  # Progressga qo'shiladigan alohida bonus
+            
+        # === FARZ NAMOZLARINI TEKSHIRUVI ===
         for p in obligatory:
             st = log_dict.get(p, 'missed')
             prayer_dots.append(st)
+
             if st == 'missed':
                 is_ruined = True
-            if st not in ['on_time', 'jamoat']:  # Jamoat ham perfect hisoblanadi
+
+            if st not in ['on_time', 'jamoat']:
                 all_prayers_perfect = False
-                
+
             if st == 'jamoat':
-                p_score += 15  # Jamoat uchun BONUS ball!
+                p_score += 15
             elif st == 'on_time':
                 p_score += 10
             elif st == 'late':
@@ -282,58 +303,25 @@ def history(request):
             elif st == 'qaza':
                 p_score += 3
 
-        p_pct = (p_score / 50) * 100
-
-        day_tasks = Task.objects.filter(user=request.user, due_date=day)
-        total_tasks = day_tasks.count()
-        completed_tasks = day_tasks.filter(is_completed=True).count()
-        task_pct = int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 100
-
-        all_tasks_perfect = (total_tasks > 0 and completed_tasks == total_tasks) or (total_tasks == 0)
-
-        efficiency = int((p_pct + task_pct) / 2)
-
-        day_status = 'normal'
-        if is_past_day:
-            if is_ruined:
-                day_status = 'ruined'
-            elif all_prayers_perfect and all_tasks_perfect and p_score == 50:
-                day_status = 'perfect'
+        # Farz namozlardan to'plangan foiz (Maksimal 50 ball asosida)
+        base_pct = (p_score / 50) * 100
+        
+        # Tahajjud bonusi qo'shiladi, lekin umumiy progress 100% dan oshmaydi
+        p_pct = min(base_pct + tahajjud_bonus, 100)
 
         calendar.append({
-            'date': str(day),
-            'day_num': day.day,
-            'day_name': day.strftime('%a'),
-            'prayer_dots': prayer_dots,
-            'task_pct': task_pct,
-            'total_tasks': total_tasks,
-            'efficiency': efficiency,
-            'status': day_status,
-            'selected': str(day) == str(selected_date),
+            'date': day,
+            'day_str': day.strftime('%d'),
+            'dots': prayer_dots,
+            'is_ruined': is_ruined,
+            'perfect': all_prayers_perfect,
+            'pct': int(p_pct),
+            'is_selected': day == selected_date,
         })
 
-    # === QUYOSH VAQTI (history sahifasi uchun) ===
-    show_sunrise = False
-    quyosh_time = times.get('quyosh')
-
-    if quyosh_time:
-        try:
-            now_str = timezone.localtime().strftime('%H:%M')
-            now_dt = datetime.strptime(now_str, "%H:%M")
-            quyosh_dt = datetime.strptime(quyosh_time, "%H:%M")
-
-            if now_dt < quyosh_dt:
-                show_sunrise = True
-        except:
-            pass
-
     context = {
-        'prayers': prayers,
         'selected_date': selected_date,
+        'prayers': prayers,
         'calendar': calendar,
-        'times_json': times,
-        'today': today,
-        'show_sunrise': show_sunrise,      # ← Qo‘shildi
-        'quyosh_time': quyosh_time,        # ← Qo‘shildi
     }
     return render(request, 'ibodat/history.html', context)

@@ -88,19 +88,18 @@
                                 <span class="text-[10px] bg-gray-700 text-white px-2.5 py-0.5 rounded-full">🌋 Qazo</span>
                             {% endif %}
                         </button>
-                    {% elif p.is_pending %}
-                        <span class="text-[10px] bg-gray-700 text-gray-300 px-2.5 py-0.5 rounded-full">Kutilmoqda</span>
                     {% elif p.needs_modal %}
-                        <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
-                                class="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white transition">
-                            Vaqt o'tdi
-                        </button>
-                    {% else %}
-                        <!-- HAR DOIM MODAL OCHILADI -->
-                        <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
-                                class="w-7 h-7 rounded-full border-2 border-gray-400 dark:border-gray-600 hover:border-green-500 flex items-center justify-center transition">
-                        </button>
-                    {% endif %}
+                        {% if p.key == 'tahajjud' %}
+                            <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
+                                    class="text-xs px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                                Ixtiyoriy
+                            </button>
+                        {% else %}
+                            <button onclick="openInsofModal('{{ p.key }}', '{{ p.label }}')" 
+                                    class="text-xs px-3 py-1 rounded-full bg-red-600 hover:bg-red-700 text-white transition">
+                                Vaqt o'tdi
+                            </button>
+                        {% endif %}
                 </div>
 
             </div>

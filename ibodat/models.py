@@ -2,8 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
-
 PRAYER_CHOICES = (
+    ('tahajjud', 'Tahajjud'), 
     ('bomdod', 'Bomdod'),
     ('peshin', 'Peshin'),
     ('asr',    'Asr'),
@@ -11,8 +11,7 @@ PRAYER_CHOICES = (
     ('xufton', 'Xufton'),
 )
 
-PRAYER_ORDER = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
-
+PRAYER_ORDER = ['tahajjud', 'bomdod', 'peshin', 'asr', 'shom', 'xufton']
 
 class PrayerTime(models.Model):
     date   = models.DateField()
