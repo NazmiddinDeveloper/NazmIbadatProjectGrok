@@ -240,7 +240,6 @@ def toggle_prayer(request, prayer_key):
 
 @login_required
 def history(request):
-    """30 kunlik kalendar ko'rinishidagi tarix va kunlik progress foizlari (XP)."""
     selected_date_str = request.GET.get('date', str(timezone.localdate()))
 
     try:
@@ -259,43 +258,39 @@ def history(request):
 
     prayers = build_prayers(times, current_key, done_set, done_at_map, status_map)
 
-    # 30 kunlik kalendar tuzish
+    # 30 kunlik kalendar
     today = timezone.localdate()
     calendar = []
     obligatory = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
 
     for i in range(29, -1, -1):
         day = today - timedelta(days=i)
-        
+        is_past_day = day < today
+
         day_logs = PrayerLog.objects.filter(user=request.user, date=day)
         log_dict = {l.prayer: l.status for l in day_logs}
 
         is_ruined = False
         all_prayers_perfect = True
         prayer_dots = []
-        
         p_score = 0
-        tahajjud_bonus = 0
 
-        # === TAHAJJUD TEKSHIRUVI (Maxsus bonus XP) ===
+        # === TAHAJJUD TEKSHIRUVI ===
         tahajjud_status = log_dict.get('tahajjud', 'missed')
         if tahajjud_status in ['on_time', 'jamoat', 'late', 'makruh']:
             prayer_dots.append('tahajjud_done')
-            tahajjud_bonus = 20  # Progressga qo'shiladigan alohida bonus
-            
-        # === FARZ NAMOZLARINI TEKSHIRUVI ===
+            p_score += 20  # Tahajjud uchun KATTA BONUS XP!
+
         for p in obligatory:
             st = log_dict.get(p, 'missed')
             prayer_dots.append(st)
-
             if st == 'missed':
                 is_ruined = True
-
-            if st not in ['on_time', 'jamoat']:
+            if st not in ['on_time', 'jamoat']:  
                 all_prayers_perfect = False
-
+                
             if st == 'jamoat':
-                p_score += 15
+                p_score += 15  
             elif st == 'on_time':
                 p_score += 10
             elif st == 'late':
@@ -303,25 +298,60 @@ def history(request):
             elif st == 'qaza':
                 p_score += 3
 
-        # Farz namozlardan to'plangan foiz (Maksimal 50 ball asosida)
-        base_pct = (p_score / 50) * 100
-        
-        # Tahajjud bonusi qo'shiladi, lekin umumiy progress 100% dan oshmaydi
-        p_pct = min(base_pct + tahajjud_bonus, 100)
+        p_pct = min((p_score / 50) * 100, 100) # 100% dan oshib ketmasligi uchun
 
+        # Tasklarni hisoblash
+        day_tasks = Task.objects.filter(user=request.user, due_date=day)
+        total_tasks = day_tasks.count()
+        completed_tasks = day_tasks.filter(is_completed=True).count()
+        task_pct = int((completed_tasks / total_tasks) * 100) if total_tasks > 0 else 100
+
+        all_tasks_perfect = (total_tasks > 0 and completed_tasks == total_tasks) or (total_tasks == 0)
+
+        efficiency = int((p_pct + task_pct) / 2)
+
+        day_status = 'normal'
+        if is_past_day:
+            if is_ruined:
+                day_status = 'ruined'
+            elif all_prayers_perfect and all_tasks_perfect and p_score >= 50:
+                day_status = 'perfect'
+
+        # MANA SHU QISM O'CHIB KETGAN EDI 👇
         calendar.append({
-            'date': day,
-            'day_str': day.strftime('%d'),
-            'dots': prayer_dots,
-            'is_ruined': is_ruined,
-            'perfect': all_prayers_perfect,
-            'pct': int(p_pct),
-            'is_selected': day == selected_date,
+            'date': str(day),
+            'day_num': day.day,
+            'day_name': day.strftime('%a'),
+            'prayer_dots': prayer_dots,
+            'task_pct': task_pct,
+            'total_tasks': total_tasks,
+            'efficiency': efficiency,
+            'status': day_status,
+            'selected': str(day) == str(selected_date),
         })
 
+    # === QUYOSH VAQTI (history sahifasi uchun) ===
+    show_sunrise = False
+    quyosh_time = times.get('quyosh')
+
+    if quyosh_time:
+        try:
+            now_str = timezone.localtime().strftime('%H:%M')
+            now_dt = datetime.strptime(now_str, "%H:%M")
+            quyosh_dt = datetime.strptime(quyosh_time, "%H:%M")
+
+            if now_dt < quyosh_dt:
+                show_sunrise = True
+        except:
+            pass
+
     context = {
-        'selected_date': selected_date,
         'prayers': prayers,
+        'selected_date': selected_date,
         'calendar': calendar,
+        'times_json': times,
+        'today': today,
+        'show_sunrise': show_sunrise,
+        'quyosh_time': quyosh_time,
     }
     return render(request, 'ibodat/history.html', context)
