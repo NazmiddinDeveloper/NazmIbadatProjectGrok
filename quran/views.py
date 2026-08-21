@@ -34,7 +34,7 @@ def quran_home(request):
 
 @login_required
 def surah_detail(request, surah_id):
-    cache_key = f'surah_detail_mushaf_v1_{surah_id}'
+    cache_key = f'surah_detail_flow_v1_{surah_id}'
     cached_data = cache.get(cache_key)
 
     if not cached_data:
@@ -59,16 +59,15 @@ def surah_detail(request, surah_id):
                 for v in verses:
                     ayah_num = int(v['verse_key'].split(':')[1])
 
-                    # Oyat ichidagi so'zlarni qatorlarga ajratamiz
-                    lines = {}
+                    # Surah sahifasida oyat oddiy matndek oqib boradi.
+                    # Mushaf qatorlariga bo'lish faqat memorize sahifasida kerak.
+                    words = []
                     for w in v['words']:
-                        l_num = w['line_number']
-                        if l_num not in lines:
-                            lines[l_num] = []
-                        lines[l_num].append(w.get('text_uthmani', ''))
+                        word_text = w.get('text_uthmani', '')
+                        if word_text:
+                            words.append(word_text)
 
-                    # Qatorlarni birlashtirib, <br> bilan ajratamiz (Mushafdek ko'rinishi uchun)
-                    formatted_text = "<br>".join([" ".join(lines[k]) for k in sorted(lines.keys())])
+                    formatted_text = " ".join(words)
                     words_data[ayah_num] = formatted_text
 
                 pagination = r_words.get('pagination', {})
@@ -125,11 +124,15 @@ def memorize_ayah(request, surah_id, ayah_id):
 
     try:
         # 1. Oyat qaysi sahifada ekanligini aniqlash
-        r_ayah = requests.get(f"https://api.quran.com/api/v4/verses/by_key/{verse_key}?fields=page_number", timeout=5)
-        page_number = r_ayah.json()['verse']['page_number']
+        r_ayah = requests.get(f"https://api.quran.com/api/v4/verses/by_key/{verse_key}?fields=page_number,v2_page", timeout=5)
+        verse_payload = r_ayah.json()['verse']
+        page_number = verse_payload.get('v2_page') or verse_payload['page_number']
 
         # 2. O'sha SAHIFADAGI barcha so'zlarni olish (Butun sahifani chizish uchun)
-        r_page = requests.get(f"https://api.quran.com/api/v4/verses/by_page/{page_number}?words=true&word_fields=text_uthmani,line_number", timeout=8)
+        r_page = requests.get(
+            f"https://api.quran.com/api/v4/verses/by_page/{page_number}?mushaf=1&words=true&word_fields=code_v2,text_uthmani,line_number,page_number",
+            timeout=8
+        )
         page_verses = r_page.json().get('verses', [])
 
         # 3. So'zlarni qatorlarga (line_number) ajratish
@@ -142,7 +145,8 @@ def memorize_ayah(request, surah_id, ayah_id):
                     lines_dict[l_num] = []
 
                 lines_dict[l_num].append({
-                    'text': word.get('text_uthmani', ''),
+                    'text': word.get('code_v2') or word.get('text_uthmani', ''),
+                    'display_text': word.get('text_uthmani', ''),
                     'is_target': v_key == verse_key, # Biz yodlayotgan oyatmi?
                 })
 
@@ -155,7 +159,7 @@ def memorize_ayah(request, surah_id, ayah_id):
         for line in mushaf_lines:
             for w in line:
                 if w['is_target']:
-                    target_words.append(w['text'])
+                    target_words.append(w.get('display_text') or w['text'])
         ayah_text_standard = ' '.join(target_words)
         # ========================================================================
 

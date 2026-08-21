@@ -2,6 +2,44 @@
 {% block title %}{{ surah_name }} — {{ ayah_id }}-oyat{% endblock %}
 
 {% block content %}
+<style>
+  @font-face {
+    font-family: 'QCFP{{ page_number }}';
+    src: url('https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/p{{ page_number }}.woff2') format('woff2'),
+         url('https://verses.quran.foundation/fonts/quran/hafs/v2/woff/p{{ page_number }}.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  .mushaf-page-text {
+    font-family: 'QCFP{{ page_number }}', 'UthmanicHafs', serif;
+    direction: rtl;
+    font-size: calc(var(--mushaf-scale, 1) * clamp(18px, 4.55vw, 35px));
+  }
+
+  .mushaf-line {
+    display: block;
+    white-space: nowrap;
+    text-align: justify;
+    text-align-last: justify;
+    line-height: 1.75;
+  }
+
+  .mushaf-line-short {
+    text-align: center;
+    text-align-last: center;
+  }
+
+  .mushaf-word {
+    display: inline;
+  }
+
+  .mushaf-sheet {
+    aspect-ratio: 0.707 / 1;
+  }
+</style>
+
 <div class="flex-1 flex flex-col overflow-hidden">
 
   <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
@@ -40,6 +78,12 @@
           <button onclick="changeFontSize(-4)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Kichraytirish">A-</button>
           <button onclick="changeFontSize(4)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Kattalashtirish">A+</button>
         </div>
+
+        <div id="mushaf-zoom-controls" class="hidden bg-gray-100 dark:bg-brand-card rounded-xl p-1 border border-gray-200 dark:border-gray-700">
+          <button onclick="changeMushafScale(-0.06)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Sahifani kichraytirish">S-</button>
+          <button onclick="resetMushafScale()" class="px-3 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Asliga qaytarish">100%</button>
+          <button onclick="changeMushafScale(0.06)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Sahifani kattalashtirish">S+</button>
+        </div>
       </div>
 
       <!-- OYAT REJIMI (Default) -->
@@ -50,30 +94,28 @@
       </div>
 
       <!-- MUSHAF SAHIFASI REJIMI (Yashiringan) -->
-      <div id="memo-view-mushaf" class="hidden bg-[#fdfcf7] dark:bg-[#121c26] rounded-2xl border border-[#e5e0d8] dark:border-gray-700 shadow-inner p-4 sm:p-8 relative overflow-hidden max-w-4xl mx-auto">
-        <div class="absolute top-2 left-0 right-0 text-center text-[10px] text-gray-400 font-bold tracking-widest">
+      <div id="memo-view-mushaf" class="hidden bg-[#f8f3e7] dark:bg-[#111a24] rounded-2xl border border-[#d8ccb8] dark:border-gray-700 shadow-inner p-3 sm:p-6 relative overflow-hidden w-full max-w-4xl mx-auto">
+        <div class="absolute top-2 left-0 right-0 text-center text-[10px] text-gray-500 dark:text-gray-400 font-bold tracking-widest">
           {{ page_number }}-SAHIFA
         </div>
 
-        <!-- space-y-1 sm:space-y-2 orqali qatorlar orasiga aniq va kichik masofa beramiz -->
-        <div class="flex flex-col w-full mt-6 space-y-1 sm:space-y-2" dir="rtl">
-          {% for line in mushaf_lines %}
-          <!-- items-baseline barcha so'zlarni pastki chiziq bo'ylab tekislaydi -->
-          <!-- leading-tight qatorning ortiqcha balandligini qirqib, ixcham qiladi -->
-          <div class="flex flex-row w-full items-baseline leading-tight text-[24px] sm:text-[34px] font-quran
-              {% if line|length <= 4 %} justify-center gap-x-6 {% else %} justify-between {% endif %}">
-              {% for word in line %}
-                  <span class="transition-colors duration-300
-                      {% if word.is_target %}
-                          text-black dark:text-white font-bold drop-shadow-[0_0_1px_rgba(0,0,0,0.5)] dark:drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]
-                      {% else %}
-                          text-gray-400 dark:text-gray-500
-                      {% endif %}">
-                      {{ word.text }}
-                  </span>
-              {% endfor %}
+        <div id="mushaf-page" class="mushaf-sheet mt-6 mx-auto w-full max-w-[430px] sm:max-w-[620px] rounded-xl border border-[#c9baa2] dark:border-gray-700 bg-[#fbf8ef] dark:bg-[#0b1520] px-[5.5%] py-[8%] overflow-hidden flex items-center">
+          <div class="mushaf-page-text w-full text-[#273043] dark:text-slate-300">
+            {% for line in mushaf_lines %}
+            <div class="mushaf-line {% if line|length <= 4 %}mushaf-line-short{% endif %}">
+                {% for word in line %}
+                    <span class="mushaf-word transition-colors duration-300
+                        {% if word.is_target %}
+                            text-black dark:text-white drop-shadow-[0_0_1px_rgba(0,0,0,0.5)] dark:drop-shadow-[0_0_4px_rgba(255,255,255,0.75)]
+                        {% else %}
+                            text-[#7b8494] dark:text-slate-500
+                        {% endif %}">
+                        {{ word.text }}
+                    </span>{% if not forloop.last %} {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
         </div>
       </div>
 
@@ -422,6 +464,7 @@
 
   // --- ZOOM MANTIQI ---
   let currentFontSize = parseInt(localStorage.getItem('verseFontSize')) || 36;
+  let currentMushafScale = parseFloat(localStorage.getItem('mushafScale')) || 1;
 
   function applyFontSize() {
     const verseText = document.getElementById('verse-text');
@@ -437,6 +480,26 @@
     localStorage.setItem('verseFontSize', currentFontSize);
     applyFontSize();
   }
+
+  function applyMushafScale() {
+    const mushafPage = document.getElementById('mushaf-page');
+    if (mushafPage) {
+      mushafPage.style.setProperty('--mushaf-scale', currentMushafScale);
+    }
+  }
+
+  function changeMushafScale(change) {
+    currentMushafScale = Math.max(0.72, Math.min(1.18, currentMushafScale + change));
+    currentMushafScale = Math.round(currentMushafScale * 100) / 100;
+    localStorage.setItem('mushafScale', currentMushafScale);
+    applyMushafScale();
+  }
+
+  function resetMushafScale() {
+    currentMushafScale = 1;
+    localStorage.setItem('mushafScale', currentMushafScale);
+    applyMushafScale();
+  }
   // --------------------
 
   // Toggle funksiyasi
@@ -446,6 +509,7 @@
     const viewVerse = document.getElementById('memo-view-verse');
     const viewMushaf = document.getElementById('memo-view-mushaf');
     const zoomControls = document.getElementById('zoom-controls');
+    const mushafZoomControls = document.getElementById('mushaf-zoom-controls');
 
     if (mode === 'verse') {
       btnVerse.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all";
@@ -453,6 +517,7 @@
       viewVerse.classList.remove('hidden');
       viewMushaf.classList.add('hidden');
       if(zoomControls) zoomControls.classList.remove('hidden');
+      if(mushafZoomControls) mushafZoomControls.classList.add('hidden');
       localStorage.setItem('quranMemoMode', 'verse');
     } else {
       btnMushaf.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all";
@@ -460,6 +525,7 @@
       viewVerse.classList.add('hidden');
       viewMushaf.classList.remove('hidden');
       if(zoomControls) zoomControls.classList.add('hidden');
+      if(mushafZoomControls) mushafZoomControls.classList.remove('hidden');
       localStorage.setItem('quranMemoMode', 'mushaf');
     }
   }
@@ -468,6 +534,7 @@
     const savedMode = localStorage.getItem('quranMemoMode') || 'verse';
     setMemoMode(savedMode);
     applyFontSize(); // Sahifa yuklanganda saqlangan shriftni qo'llash
+    applyMushafScale();
   });
 </script>
 {% endblock %}

@@ -16,7 +16,81 @@
     </header>
 
     <main class="flex-1 overflow-y-auto p-5 pb-24 md:pb-5">
-      <div class="max-w-2xl mx-auto space-y-4">
+      <div class="max-w-5xl mx-auto space-y-4">
+
+        <!-- NAMOZ SIFATI PANELI -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {% for panel in quality_panels %}
+          <section class="bg-white dark:bg-brand-surf rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex items-start justify-between gap-3">
+              <div>
+                <h2 class="text-sm font-bold text-gray-900 dark:text-white">{{ panel.title }}</h2>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{{ panel.subtitle }}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="text-2xl font-black
+                  {% if panel.quality_pct >= 90 %}text-green-600 dark:text-green-400
+                  {% elif panel.quality_pct >= 50 %}text-yellow-500
+                  {% else %}text-red-500{% endif %}">
+                  {{ panel.quality_pct }}%
+                </div>
+                <div class="text-[10px] text-gray-400 font-medium">sifat</div>
+              </div>
+            </div>
+
+            <div class="p-4 space-y-4">
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div class="rounded-lg bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-800 p-3">
+                  <div class="text-[10px] uppercase tracking-wide text-gray-400 font-bold">Umumiy</div>
+                  <div class="text-xl font-black text-gray-900 dark:text-white mt-1">{{ panel.total }}</div>
+                </div>
+                {% for item in panel.items %}
+                <div class="rounded-lg bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-800 p-3">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="w-2 h-2 rounded-full shrink-0 {{ item.dot_class }}"></span>
+                    <span class="text-[10px] uppercase tracking-wide text-gray-400 font-bold truncate">{{ item.label }}</span>
+                  </div>
+                  <div class="flex items-end justify-between gap-2 mt-1">
+                    <span class="text-xl font-black text-gray-900 dark:text-white">{{ item.count }}</span>
+                    <span class="text-[10px] text-gray-400">{{ item.pct }}%</span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+
+              <div>
+                <div class="h-3 flex overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                  {% for item in panel.items %}
+                  {% if item.count > 0 %}
+                  <div class="{{ item.bar_class }} {% if item.key == 'qaza' %}shadow-[0_0_12px_rgba(255,255,255,0.75)]{% endif %}" style="width: {{ item.pct }}%"></div>
+                  {% endif %}
+                  {% endfor %}
+                </div>
+                <div class="mt-2 space-y-1.5">
+                  {% for item in panel.items %}
+                  <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full shrink-0 {{ item.dot_class }}"></span>
+                    <span class="w-16 text-[11px] text-gray-500 dark:text-gray-400">{{ item.label }}</span>
+                    <div class="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                      <div class="h-full rounded-full {{ item.bar_class }} {% if item.key == 'qaza' %}shadow-[0_0_8px_rgba(255,255,255,0.7)]{% endif %}" style="width: {{ item.pct }}%"></div>
+                    </div>
+                    <span class="w-9 text-right text-[11px] font-bold text-gray-600 dark:text-gray-300">{{ item.count }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="rounded-lg border
+                {% if panel.quality_pct >= 90 %}bg-green-50 dark:bg-green-900/15 border-green-200 dark:border-green-900 text-green-800 dark:text-green-300
+                {% elif panel.quality_pct >= 50 %}bg-yellow-50 dark:bg-yellow-900/15 border-yellow-200 dark:border-yellow-900 text-yellow-800 dark:text-yellow-300
+                {% else %}bg-red-50 dark:bg-red-900/15 border-red-200 dark:border-red-900 text-red-800 dark:text-red-300{% endif %}
+                px-3 py-2 text-xs font-medium">
+                {{ panel.motivation }}
+              </div>
+            </div>
+          </section>
+          {% endfor %}
+        </div>
 
         <!-- 30 KUNLIK KALENDAR -->
         <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
@@ -30,6 +104,8 @@
                {% if day.selected %}ring-2 ring-green-500 scale-105 z-10{% endif %}
                {% if day.status == 'perfect' %}
                   bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900/40 dark:to-yellow-600/40 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]
+               {% elif day.status == 'ruined' %}
+                  bg-black border-red-950 shadow-[0_0_22px_rgba(239,68,68,0.45)]
                {% else %}
                   {% if day.efficiency >= 80 %}bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800
                   {% elif day.efficiency >= 50 %}bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800
@@ -38,6 +114,11 @@
                
                <!-- 🔥 Jahannam (Ruined) - Olov faqat tepa o'ng burchakda -->
                {% if day.status == 'ruined' %}
+               <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.45),rgba(0,0,0,0.1)_42%,rgba(0,0,0,0)_70%)]"></div>
+               <div class="absolute -top-2 left-1/2 -translate-x-1/2 text-5xl sm:text-6xl animate-pulse drop-shadow-[0_0_22px_rgba(239,68,68,1)] opacity-95">🔥</div>
+               <div class="absolute -bottom-3 -left-2 text-4xl sm:text-5xl animate-pulse drop-shadow-[0_0_18px_rgba(249,115,22,1)] opacity-90">🔥</div>
+               <div class="absolute -bottom-3 -right-2 text-4xl sm:text-5xl animate-pulse drop-shadow-[0_0_18px_rgba(249,115,22,1)] opacity-90">🔥</div>
+               {% elif day.status == 'missed' %}
                <div class="absolute top-0.5 right-0.5 text-sm sm:text-base animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]">🔥</div>
                {% endif %}
                
@@ -56,17 +137,17 @@
                         {% else %}bg-green-500 shadow-[0_0_5px_#22c55e]{% endif %}"></div>
                      {% endfor %}
                   </div>
-                  <div class="h-1 w-full bg-yellow-200 dark:bg-yellow-900/50 rounded-full overflow-hidden">
-                     <div class="h-full bg-yellow-500 rounded-full" style="width: 100%"></div>
+                  <div class="h-1 w-full bg-green-100 dark:bg-green-950/60 rounded-full overflow-hidden">
+                     <div class="h-full bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.85)]" style="width: 100%"></div>
                   </div>
                </div>
                
                <!-- 📊 Normal yoki Ruined (Lekin nuqtalar ko'rinadi) -->
                {% else %}
                <div class="flex justify-between w-full">
-                  <span class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ day.day_num }}</span>
+                  <span class="relative z-10 text-xs font-bold {% if day.status == 'ruined' %}text-red-100{% else %}text-gray-700 dark:text-gray-300{% endif %}">{{ day.day_num }}</span>
                </div>
-               <div class="mt-auto space-y-1.5">
+               <div class="relative z-10 mt-auto space-y-1.5">
                   <!-- Namoz nuqtalari -->
                   <div class="flex justify-between gap-0.5">
                      {% for dot in day.prayer_dots %}
@@ -75,20 +156,20 @@
                         {% elif dot == 'jamoat' %}bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]
                         {% elif dot == 'on_time' %}bg-green-500
                         {% elif dot == 'late' %}bg-yellow-400
-                        {% elif dot == 'qaza' %}bg-black shadow-[0_0_6px_rgba(0,0,0,0.8)] dark:shadow-[0_0_6px_rgba(255,255,255,0.3)]
+                        {% elif dot == 'makruh' %}bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.9)]
+                        {% elif dot == 'qaza' %}bg-black ring-1 ring-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]
                         {% else %}bg-gray-300 dark:bg-gray-600{% endif %}">
                      </div>
                      {% endfor %}
                   </div>
-                  <!-- Task progress bar -->
-                  <div class="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                     {% if day.total_tasks > 0 %}
+                  <!-- Namoz sifati chizig'i -->
+                  <div class="h-1 w-full {% if day.status == 'ruined' %}bg-gray-900{% else %}bg-gray-200 dark:bg-gray-700{% endif %} rounded-full overflow-hidden">
                      <div class="h-full rounded-full transition-all
-                        {% if day.task_pct >= 80 %}bg-green-500
-                        {% elif day.task_pct >= 50 %}bg-yellow-400
+                        {% if day.status == 'ruined' %}bg-black ring-1 ring-white/40 shadow-[0_0_10px_rgba(255,255,255,0.85)]
+                        {% elif day.prayer_pct >= 100 %}bg-green-500
+                        {% elif day.prayer_pct >= 50 %}bg-yellow-400
                         {% else %}bg-red-500{% endif %}" 
-                        style="width: {{ day.task_pct }}%"></div>
-                     {% endif %}
+                        style="width: {% if day.status == 'ruined' %}100{% else %}{{ day.prayer_pct }}{% endif %}%"></div>
                   </div>
                </div>
                {% endif %}
@@ -99,11 +180,13 @@
           <!-- Izoh (Legend) -->
           <div class="flex flex-wrap items-center gap-4 mt-4 bg-gray-50 dark:bg-brand-card p-3 rounded-xl border border-gray-200 dark:border-gray-800">
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">✨</span> Firdavs (100% ideal)</span>
-            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">🔥</span> Jahannam (Qazo bor)</span>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="text-sm">🔥</span> Unutilgan</span>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="inline-flex w-4 h-4 items-center justify-center rounded bg-black text-xs shadow-[0_0_6px_rgba(239,68,68,0.9)]">🔥</span> Qazo bor</span>
             <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-green-300 shadow-[0_0_5px_rgba(134,239,172,0.9)]"></span> Tahajjud</span>
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-green-500"></span> Vaqtida</span>
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-yellow-400"></span> Kechikib</span>
+            <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]"></span> Oxirida</span>
             <span class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium"><span class="w-2 h-2 rounded-full bg-black shadow-[0_0_4px_rgba(0,0,0,0.8)] dark:shadow-[0_0_4px_rgba(255,255,255,0.5)]"></span> Qazo</span>
           </div>
         </div>

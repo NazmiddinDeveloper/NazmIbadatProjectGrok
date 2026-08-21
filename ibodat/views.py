@@ -3,6 +3,7 @@ import requests
 
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.db.models import Count
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
@@ -262,6 +263,95 @@ def history(request):
     today = timezone.localdate()
     calendar = []
     obligatory = ['bomdod', 'peshin', 'asr', 'shom', 'xufton']
+    month_start = today - timedelta(days=29)
+
+    status_meta = {
+        'jamoat': {
+            'label': 'Jamoat',
+            'dot_class': 'bg-white ring-1 ring-gray-300 shadow-[0_0_8px_rgba(255,255,255,0.9)]',
+            'bar_class': 'bg-white',
+        },
+        'on_time': {
+            'label': 'Boshida',
+            'dot_class': 'bg-green-500',
+            'bar_class': 'bg-green-500',
+        },
+        'late': {
+            'label': "O'rtasida",
+            'dot_class': 'bg-yellow-400',
+            'bar_class': 'bg-yellow-400',
+        },
+        'makruh': {
+            'label': 'Oxirida',
+            'dot_class': 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]',
+            'bar_class': 'bg-red-500',
+        },
+        'qaza': {
+            'label': 'Qazo',
+            'dot_class': 'bg-black ring-1 ring-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]',
+            'bar_class': 'bg-black',
+        },
+    }
+    status_order = ['jamoat', 'on_time', 'late', 'makruh', 'qaza']
+    quality_weight = {
+        'jamoat': 100,
+        'on_time': 100,
+        'late': 70,
+        'makruh': 35,
+        'qaza': 0,
+    }
+
+    def build_quality_stats(title, subtitle, queryset):
+        rows = queryset.values('status').annotate(count=Count('id'))
+        counts = {row['status']: row['count'] for row in rows}
+        total = sum(counts.get(status, 0) for status in status_order)
+        weighted_total = sum(counts.get(status, 0) * quality_weight[status] for status in status_order)
+        quality_pct = int(weighted_total / total) if total else 0
+
+        if total == 0:
+            motivation = "Hali ma'lumot yo'q. Birinchi belgi ham boshlanish uchun yetadi."
+        elif counts.get('qaza', 0) == 0 and quality_pct >= 90:
+            motivation = "Juda kuchli yurish. Shu maromni asra."
+        elif counts.get('qaza', 0) > 0:
+            motivation = "Qazo sonini kamaytirish eng katta sakrash bo'ladi. Keyingi namozni vaqtida tut."
+        elif quality_pct >= 70:
+            motivation = "Yo'l yaxshi. Endi sariqlarni yashilga aylantirish vaqti."
+        else:
+            motivation = "Bugundan bitta namozni boshida qilish bilan ritm qaytadi."
+
+        items = []
+        for status in status_order:
+            count = counts.get(status, 0)
+            pct = int((count / total) * 100) if total else 0
+            meta = status_meta[status]
+            items.append({
+                'key': status,
+                'label': meta['label'],
+                'count': count,
+                'pct': pct,
+                'dot_class': meta['dot_class'],
+                'bar_class': meta['bar_class'],
+            })
+
+        return {
+            'title': title,
+            'subtitle': subtitle,
+            'total': total,
+            'quality_pct': quality_pct,
+            'motivation': motivation,
+            'items': items,
+        }
+
+    marked_logs = PrayerLog.objects.filter(
+        user=request.user,
+        prayer__in=obligatory,
+        is_done=True,
+        status__in=status_order,
+    )
+    quality_panels = [
+        build_quality_stats('Butun davr', 'Barcha belgilangan farz namozlar', marked_logs),
+        build_quality_stats('Oxirgi 30 kun', f'{month_start:%d.%m.%Y} - {today:%d.%m.%Y}', marked_logs.filter(date__gte=month_start, date__lte=today)),
+    ]
 
     for i in range(29, -1, -1):
         day = today - timedelta(days=i)
@@ -270,7 +360,8 @@ def history(request):
         day_logs = PrayerLog.objects.filter(user=request.user, date=day)
         log_dict = {l.prayer: l.status for l in day_logs}
 
-        is_ruined = False
+        has_qaza = False
+        has_missed = False
         all_prayers_perfect = True
         prayer_dots = []
         p_score = 0
@@ -284,8 +375,10 @@ def history(request):
         for p in obligatory:
             st = log_dict.get(p, 'missed')
             prayer_dots.append(st)
-            if st == 'missed':
-                is_ruined = True
+            if st == 'qaza':
+                has_qaza = True
+            elif st == 'missed':
+                has_missed = True
             if st not in ['on_time', 'jamoat']:  
                 all_prayers_perfect = False
                 
@@ -311,9 +404,11 @@ def history(request):
         efficiency = int((p_pct + task_pct) / 2)
 
         day_status = 'normal'
-        if is_past_day:
-            if is_ruined:
-                day_status = 'ruined'
+        if has_qaza:
+            day_status = 'ruined'
+        elif is_past_day:
+            if has_missed:
+                day_status = 'missed'
             elif all_prayers_perfect and all_tasks_perfect and p_score >= 50:
                 day_status = 'perfect'
 
@@ -323,6 +418,7 @@ def history(request):
             'day_num': day.day,
             'day_name': day.strftime('%a'),
             'prayer_dots': prayer_dots,
+            'prayer_pct': int(p_pct),
             'task_pct': task_pct,
             'total_tasks': total_tasks,
             'efficiency': efficiency,
@@ -349,6 +445,7 @@ def history(request):
         'prayers': prayers,
         'selected_date': selected_date,
         'calendar': calendar,
+        'quality_panels': quality_panels,
         'times_json': times,
         'today': today,
         'show_sunrise': show_sunrise,
