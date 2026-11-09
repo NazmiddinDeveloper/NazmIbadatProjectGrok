@@ -3,115 +3,147 @@
 
 {% block content %}
 <style>
+  /* 1. Klassik V2 Mushaf shrifti */
   @font-face {
     font-family: 'QCFP{{ page_number }}';
-    src: url('https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/p{{ page_number }}.woff2') format('woff2'),
-         url('https://verses.quran.foundation/fonts/quran/hafs/v2/woff/p{{ page_number }}.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
+    src: url('https://verses.quran.foundation/fonts/quran/hafs/v2/woff2/p{{ page_number }}.woff2') format('woff2');
+    font-weight: normal; font-style: normal; font-display: swap;
   }
 
+  /* 2. V4 Rangli Tajvid Mushaf Shrifti */
+  @font-face {
+    font-family: 'QCFP_TAJWEED_{{ page_number }}';
+    src: url('https://verses.quran.foundation/fonts/quran/hafs/v4/colrv1/woff2/p{{ page_number }}.woff2') format('woff2');
+    font-weight: normal; font-style: normal; font-display: swap;
+  }
+
+  @font-palette-values --MushafDarkPalette { font-family: 'QCFP_TAJWEED_{{ page_number }}'; base-palette: 1; }
+
   .mushaf-page-text {
-    font-family: 'QCFP{{ page_number }}', 'UthmanicHafs', serif;
+    font-family: 'QCFP_TAJWEED_{{ page_number }}', 'QCFP{{ page_number }}', 'UthmanicHafs', serif;
     direction: rtl;
     font-size: calc(var(--mushaf-scale, 1) * clamp(18px, 4.55vw, 35px));
   }
+  html.dark body:not(.tajweed-off) .mushaf-page-text { font-palette: --MushafDarkPalette; }
+  body.tajweed-off .mushaf-page-text { font-family: 'QCFP{{ page_number }}', 'UthmanicHafs', serif !important; }
 
-  .mushaf-line {
-    display: block;
-    white-space: nowrap;
-    text-align: justify;
-    text-align-last: justify;
-    line-height: 1.75;
+  .mushaf-line { display: block; white-space: nowrap; text-align: justify; text-align-last: justify; line-height: 1.75; }
+  .mushaf-line-short { text-align: center; text-align-last: center; }
+  .mushaf-word { display: inline; cursor: pointer; border-radius: 4px; padding: 0 2px; transition: all 0.3s ease; }
+  .mushaf-sheet { aspect-ratio: 0.707 / 1; }
+
+  /* Bitta qatorli gorizontal scroll (Mobil uchun) */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ==========================================
+     MUSHAF FOKUS VA BLUR EFFEKTLARI
+     ========================================== */
+  
+  /* DEFAULT HOLAT: Hamma oyat yorqin. Target oyat orqasi yengil nurli */
+  /*.mushaf-other-w { opacity: 1; color: #475569; }
+  html.dark .mushaf-other-w { color: #CBD5E1; }*/
+  
+  /*.mushaf-target-w { opacity: 1; background-color: rgba(234, 179, 8, 0.15); }
+  html.dark .mushaf-target-w { background-color: rgba(124, 255, 79, 0.15); }*/
+
+  /* FOKUS HOLAT (Faqat bitta oyat yorqin qoladi) */
+  .mushaf-laser-focus .mushaf-other-w { opacity: 0.15 !important; background: transparent; }
+  .mushaf-laser-focus .mushaf-target-w { opacity: 1 !important; background: transparent; text-shadow: 0 0 5px rgba(255,255,255,0.4); }
+
+  /* YODDAN SINASH (Blur) HOLAT */
+  .blur-test-mode #verse-text:not(.revealed),
+  .blur-test-mode .mushaf-target-w:not(.revealed) {
+    filter: blur(6px); opacity: 0.4 !important; background: transparent !important; cursor: pointer;
   }
 
-  .mushaf-line-short {
-    text-align: center;
-    text-align-last: center;
-  }
-
-  .mushaf-word {
-    display: inline;
-  }
-
-  .mushaf-sheet {
-    aspect-ratio: 0.707 / 1;
+  /* ==========================================
+     DRAGGABLE TASBEH
+     ========================================== */
+  #draggable-tasbeh {
+    touch-action: none; /* Mobil brauzer scroll qilib yubormasligi uchun */
+    user-select: none;
   }
 </style>
 
-<div class="flex-1 flex flex-col overflow-hidden">
+<div class="flex-1 flex flex-col overflow-hidden relative">
 
-  <header class="bg-white dark:bg-brand-bg border-b border-gray-200 dark:border-gray-800 px-5 py-3 flex items-center justify-between shrink-0">
-    <div class="flex items-center gap-3">
-      <a href="{% url 'surah_detail' surah_id %}" class="p-2 rounded-lg bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition">←</a>
-      <div>
-        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ surah_name }} — {{ ayah_id }}-oyat</div>
-        <div class="text-xs text-gray-500 dark:text-gray-400" id="repeat-count-label">
-          <span id="repeat-num">{{ obj.repeats }}</span> marta takrorlandi
+  <!-- TOPBAR -->
+  <header class="bg-white dark:bg-brand-surf border-b border-gray-200 dark:border-gray-800 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-2 shrink-0">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <a href="{% url 'surah_detail' surah_id %}" class="p-2 rounded-xl bg-gray-100 dark:bg-brand-card hover:bg-gray-200 dark:hover:bg-gray-700 transition shrink-0">←</a>
+      <div class="truncate">
+        <div class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">{{ surah_name }} — {{ ayah_id }}-oyat</div>
+        <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+          {{ page_number }}-sahifa · <span id="repeat-num" class="font-bold text-green-600 dark:text-brand-accent">{{ obj.repeats }}</span> ta takror
         </div>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <div class="text-xl font-bold text-green-600 dark:text-brand-accent font-quran" dir="rtl">
-        {{ surah_arabic }}
-      </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button onclick="openTajvidModal()" class="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition">ℹ️ <span class="hidden sm:inline">Qoidalar</span></button>
+      <button onclick="toggleTajvid()" class="tajvid-btn px-2.5 sm:px-3 py-1.5 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold transition">🎨 Tajvid: Yoqiq</button>
     </div>
   </header>
 
-  <main class="flex-1 overflow-y-auto p-4 pb-24 md:pb-5">
+  <main class="flex-1 overflow-y-auto p-3 sm:p-4 pb-28 md:pb-8">
     <div class="max-w-3xl mx-auto space-y-4">
 
-      <!-- TOGGLE VA ZOOM TUGMALARI -->
-      <div class="flex flex-wrap justify-center items-center gap-3 mb-2">
-        <div class="flex bg-gray-100 dark:bg-brand-card rounded-xl p-1 border border-gray-200 dark:border-gray-700">
-          <button id="btn-memo-verse" onclick="setMemoMode('verse')" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all">
-            📄 Oyat
-          </button>
-          <button id="btn-memo-mushaf" onclick="setMemoMode('mushaf')" class="px-4 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">
-            📖 Sahifa (Mushaf)
-          </button>
-        </div>
+      <!-- ====================================================================
+           1. ASBOBLAR PANELI (MOBILDA BIR QATORDA SCROLL BO'LADI)
+           ==================================================================== -->
+      <div class="flex flex-nowrap items-center gap-2 bg-white dark:bg-brand-surf p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto scrollbar-hide w-full" style="-webkit-overflow-scrolling: touch;">
         
-        <!-- Zoom tugmalari (Faqat Oyat rejimida ko'rinadi) -->
-        <div id="zoom-controls" class="flex bg-gray-100 dark:bg-brand-card rounded-xl p-1 border border-gray-200 dark:border-gray-700">
-          <button onclick="changeFontSize(-4)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Kichraytirish">A-</button>
-          <button onclick="changeFontSize(4)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Kattalashtirish">A+</button>
+        <!-- Oyat / Mushaf Switcher -->
+        <div class="flex bg-gray-100 dark:bg-brand-card rounded-xl p-1 shrink-0">
+          <button id="btn-memo-verse" onclick="setMemoMode('verse')" class="flex items-center gap-1.5 px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all">📄 Oyat</button>
+          <button id="btn-memo-mushaf" onclick="setMemoMode('mushaf')" class="flex items-center gap-1.5 px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-lg transition-all">📖 Mushaf</button>
         </div>
 
-        <div id="mushaf-zoom-controls" class="hidden bg-gray-100 dark:bg-brand-card rounded-xl p-1 border border-gray-200 dark:border-gray-700">
-          <button onclick="changeMushafScale(-0.06)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Sahifani kichraytirish">S-</button>
-          <button onclick="resetMushafScale()" class="px-3 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Asliga qaytarish">100%</button>
-          <button onclick="changeMushafScale(0.06)" class="px-3 py-1.5 text-sm font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-brand-surf transition-all" title="Sahifani kattalashtirish">S+</button>
+        <!-- Yoddan sinash -->
+        <button id="btn-blur-test" onclick="toggleBlurMode()" class="shrink-0 px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl bg-gray-100 dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 transition">
+          👁 Yoddan sinash
+        </button>
+
+        <!-- Oyat Zoom -->
+        <div id="zoom-controls" class="flex bg-gray-100 dark:bg-brand-card rounded-xl p-1 shrink-0">
+          <button onclick="changeFontSize(-4)" class="px-3 py-1 text-xs font-extrabold rounded-lg text-gray-500 hover:bg-white dark:hover:bg-brand-surf transition-all">A-</button>
+          <button onclick="changeFontSize(4)" class="px-3 py-1 text-xs font-extrabold rounded-lg text-gray-500 hover:bg-white dark:hover:bg-brand-surf transition-all">A+</button>
         </div>
+
+        <!-- Mushaf Fokus va Zoom -->
+        <div id="mushaf-zoom-controls" class="hidden items-center bg-gray-100 dark:bg-brand-card rounded-xl p-1 gap-1 shrink-0">
+          <button onclick="toggleMushafFocus()" id="btn-mushaf-focus" class="px-3 py-1 text-[11px] sm:text-xs font-bold rounded-lg text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-brand-surf transition">🎯 Fokus</button>
+          <div class="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+          <button onclick="changeMushafScale(-0.05)" class="px-2 py-1 text-xs font-extrabold rounded-lg text-gray-500">S-</button>
+          <button onclick="resetMushafScale()" class="px-1.5 py-1 text-[10px] font-bold rounded-lg text-gray-500">100%</button>
+          <button onclick="changeMushafScale(0.05)" class="px-2 py-1 text-xs font-extrabold rounded-lg text-gray-500">S+</button>
+        </div>
+
       </div>
 
-      <!-- OYAT REJIMI (Default) -->
+      <!-- ====================================================================
+           2A. OYAT REJIMI
+           ==================================================================== -->
       <div id="memo-view-verse" class="bg-white dark:bg-brand-surf rounded-3xl border border-gray-200 dark:border-gray-800 p-6 sm:p-10 text-center shadow-sm">
-        <p id="verse-text" class="leading-[2.2] md:leading-[2.5] text-gray-900 dark:text-white font-quran break-words transition-all duration-200" dir="rtl" style="font-size: 36px;">
+        <p id="verse-text" onclick="this.classList.toggle('revealed')" class="leading-[2.2] md:leading-[2.5] text-gray-900 dark:text-white font-quran break-words transition-all duration-200" dir="rtl" style="font-size: 36px;">
           {{ ayah_text_standard }}
         </p>
       </div>
 
-      <!-- MUSHAF SAHIFASI REJIMI (Yashiringan) -->
+      <!-- ====================================================================
+           2B. MUSHAF REJIMI (DEFAULT YORQIN)
+           ==================================================================== -->
       <div id="memo-view-mushaf" class="hidden bg-[#f8f3e7] dark:bg-[#111a24] rounded-2xl border border-[#d8ccb8] dark:border-gray-700 shadow-inner p-3 sm:p-6 relative overflow-hidden w-full max-w-4xl mx-auto">
         <div class="absolute top-2 left-0 right-0 text-center text-[10px] text-gray-500 dark:text-gray-400 font-bold tracking-widest">
           {{ page_number }}-SAHIFA
         </div>
-
         <div id="mushaf-page" class="mushaf-sheet mt-6 mx-auto w-full max-w-[430px] sm:max-w-[620px] rounded-xl border border-[#c9baa2] dark:border-gray-700 bg-[#fbf8ef] dark:bg-[#0b1520] px-[5.5%] py-[8%] overflow-hidden flex items-center">
-          <div class="mushaf-page-text w-full text-[#273043] dark:text-slate-300">
+          <div id="mushaf-lines-container" class="mushaf-page-text w-full text-[#273043] dark:text-slate-300">
             {% for line in mushaf_lines %}
             <div class="mushaf-line {% if line|length <= 4 %}mushaf-line-short{% endif %}">
                 {% for word in line %}
-                    <span class="mushaf-word transition-colors duration-300
-                        {% if word.is_target %}
-                            text-black dark:text-white drop-shadow-[0_0_1px_rgba(0,0,0,0.5)] dark:drop-shadow-[0_0_4px_rgba(255,255,255,0.75)]
-                        {% else %}
-                            text-[#7b8494] dark:text-slate-500
-                        {% endif %}">
-                        {{ word.text }}
-                    </span>{% if not forloop.last %} {% endif %}
+                    <span onclick="handleMushafWordClick(this)" class="mushaf-word
+                        {% if word.is_target %}mushaf-target-w{% else %}mushaf-other-w{% endif %}">{{ word.text }}</span>{% if not forloop.last %} {% endif %}
                 {% endfor %}
             </div>
             {% endfor %}
@@ -119,39 +151,49 @@
         </div>
       </div>
 
-      <!-- Asboblar paneli -->
-      <div class="flex justify-center gap-2 mt-2">
+      <!-- ====================================================================
+           3. O'QILISHI VA TAFSIR
+           ==================================================================== -->
+      <div class="flex flex-wrap justify-center gap-2 mt-2">
         <button onclick="toggleTransliteration()" class="px-4 py-2 rounded-xl bg-white dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-50 transition shadow-sm">🔤 O'qilishi</button>
         <button onclick="openTafsirModal()" class="px-4 py-2 rounded-xl bg-white dark:bg-brand-card border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-50 transition shadow-sm">📝 Tafsir</button>
       </div>
 
-      <!-- Transkripsiya (Yashiringan) -->
-      <p id="ayah-trans" class="hidden mt-2 text-sm text-gray-500 dark:text-gray-400 text-center italic leading-relaxed">
-        {{ transliteration }}
-      </p>
+      <p id="ayah-trans" class="hidden mt-2 text-sm text-gray-500 dark:text-gray-400 text-center italic leading-relaxed">{{ transliteration }}</p>
 
-      <!-- IXCHAM AUDIO PLEYER -->
+      <!-- AUDIO PLEYER -->
       <div class="bg-white dark:bg-brand-surf rounded-2xl border border-gray-200 dark:border-gray-800 p-3 flex items-center gap-3 mt-4">
         <button id="play-btn" onclick="toggleAudio()" class="w-12 h-12 rounded-xl bg-green-500 dark:bg-brand-accent text-white dark:text-black flex items-center justify-center text-xl shadow-lg shadow-green-500/30 active:scale-95 transition">▶</button>
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 cursor-pointer" onclick="openAudioSettings()">
           <div class="text-xs font-bold text-gray-900 dark:text-white truncate" id="current-qori-name">Mishary Alafasy</div>
           <div class="text-[10px] text-gray-500" id="audio-status">To'xtatilgan</div>
         </div>
+        <button onclick="cycleSpeed()" id="speed-btn" class="px-2.5 h-10 rounded-xl bg-gray-100 dark:bg-brand-card text-xs font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition">1x</button>
         <button onclick="openAudioSettings()" class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-brand-card flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 transition">⚙️</button>
         <audio id="audio-player" class="hidden"><source src="{{ audio_url }}" type="audio/mpeg"></audio>
       </div>
 
-      <!-- TASBEH -->
+      <!-- ====================================================================
+           4. KATTA TASBEH VA SUZUVCHI TASBEH SOZLAMASI
+           ==================================================================== -->
       <div class="bg-white dark:bg-brand-surf rounded-3xl border border-gray-200 dark:border-gray-800 p-6 relative flex flex-col items-center">
-        <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-4 w-full text-left">🔄 Takror sanagi</div>
-
-        <div class="absolute top-5 right-5 flex items-center gap-1 text-xs text-gray-500 font-medium">
-          Maqsad:
-          <div class="relative">
-            <select id="target-select" onchange="updateTarget()" class="appearance-none bg-gray-100 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-lg pl-2 pr-6 py-1 text-xs font-bold text-gray-900 dark:text-white cursor-pointer outline-none focus:ring-2 focus:ring-green-500">
-              <option value="7">7</option><option value="10" selected>10</option><option value="20">20</option><option value="40">40</option><option value="100">100</option>
-            </select>
-            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] pointer-events-none">▼</span>
+        
+        <div class="w-full flex justify-between items-center mb-6">
+          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
+            🔄 Takror sanog'i 
+            <!-- SUZUVCHI TASBEH TOGGLE TUGMASI -->
+            <button onclick="toggleDraggableTasbeh()" id="btn-drag-toggle" class="px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-600 dark:text-gray-300 transition hover:text-green-500">
+              🕹 Suzuvchi Tasbeh: OFF
+            </button>
+          </div>
+          <div class="flex items-center gap-1 text-xs text-gray-500 font-medium">
+            Maqsad:
+            <div class="relative">
+              <select id="target-select" onchange="updateTarget()" class="appearance-none bg-gray-100 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-lg pl-2 pr-6 py-1 text-xs font-bold text-gray-900 dark:text-white cursor-pointer outline-none focus:ring-2 focus:ring-green-500">
+                <option value="7">7</option><option value="10" selected>10</option><option value="20">20</option><option value="40">40</option><option value="100">100</option>
+              </select>
+              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[8px] pointer-events-none">▼</span>
+            </div>
           </div>
         </div>
 
@@ -162,77 +204,87 @@
           </svg>
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <div class="text-4xl font-bold text-gray-900 dark:text-white" id="tasbeh-count">{{ obj.repeats }}</div>
-            <div class="text-[10px] text-gray-400">marta</div>
           </div>
         </div>
 
-        <button id="tasbeh-btn" onclick="doRepeat()" class="w-24 h-24 mt-6 rounded-full bg-green-500 dark:bg-brand-accent text-white dark:text-black text-4xl font-bold shadow-lg shadow-green-500/30 active:scale-95 transition-transform select-none">+</button>
+        <button onclick="doRepeat()" class="w-24 h-24 mt-6 rounded-full bg-green-500 dark:bg-brand-accent text-white dark:text-black text-4xl font-bold shadow-lg shadow-green-500/30 active:scale-95 transition-transform select-none">+</button>
         <button onclick="resetTasbeh()" class="mt-6 text-xs text-gray-400 hover:text-red-500 transition font-medium">Noldan boshlash</button>
       </div>
 
-      <!-- YODLANDI VA NAVIGATSIYA -->
-      <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col items-center gap-4">
-        <button id="memorize-btn" onclick="doMemorize()" class="w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 {% if obj.is_memorized %}bg-green-500 text-white shadow-md shadow-green-500/20 border-none{% else %}bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-300{% endif %}">
-          {% if obj.is_memorized %}
-            <span class="text-base">✨</span> Yodlandi
-          {% else %}
-            <span class="text-base">🧠</span> Yodladim
-          {% endif %}
+      <!-- ====================================================================
+           5. YODLANDI VA KENGAYTIRILGAN NAVIGATSIYA (OYAT / SAHIFA)
+           ==================================================================== -->
+      <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col items-center gap-4">
+        
+        <button id="memorize-btn" onclick="doMemorize()" class="w-full max-w-xs py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 {% if obj.is_memorized %}bg-green-500 text-white shadow-md shadow-green-500/20 border-none{% else %}bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-green-50 hover:text-green-600{% endif %}">
+          {% if obj.is_memorized %}✨ Yodlandi{% else %}🧠 Yodladim{% endif %}
         </button>
 
-        <div class="flex items-center justify-center gap-3 w-full">
-          {% if prev_ayah %}
-          <a href="{% url 'memorize_ayah' surah_id prev_ayah %}" class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-bold transition-all">
-            &larr; Oldingi
-          </a>
-          {% endif %}
-
-          {% if next_ayah %}
-          <a href="{% url 'memorize_ayah' surah_id next_ayah %}" class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-500 hover:text-gray-900 dark:hover:text-white text-xs font-bold transition-all">
-            Keyingi &rarr;
-          </a>
-          {% endif %}
+        <div class="w-full grid grid-cols-2 gap-2 text-xs">
+          <!-- Oyat nav -->
+          <div class="flex flex-col gap-2">
+            {% if prev_ayah %}<a href="{% url 'memorize_ayah' surah_id prev_ayah %}" class="w-full py-2.5 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-center font-bold hover:bg-gray-200 transition">‹ Old. Oyat</a>{% endif %}
+            {% if next_ayah %}<a href="{% url 'memorize_ayah' surah_id next_ayah %}" class="w-full py-2.5 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-center font-bold hover:bg-gray-200 transition">Key. Oyat ›</a>{% endif %}
+          </div>
+          <!-- Sahifa nav -->
+          <div class="flex flex-col gap-2">
+            <button onclick="alert('API orqali oldingi sahifaning 1-oyati hisoblanib, shu yerga ulanadi (Tez orada).')" class="w-full py-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-center font-bold hover:bg-blue-100 transition">‹ Old. Sahifa</button>
+            <button onclick="alert('API orqali keyingi sahifaning 1-oyati hisoblanib, shu yerga ulanadi (Tez orada).')" class="w-full py-2.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-center font-bold hover:bg-blue-100 transition">Key. Sahifa ›</button>
+          </div>
         </div>
       </div>
 
     </div>
   </main>
+
+  <!-- ========================================================================
+       DRAGGABLE (SURILADIGAN) SUZUVCHI TASBEH TUGMASI
+       ======================================================================== -->
+  <div id="draggable-tasbeh" class="hidden fixed flex-col items-center justify-center w-[68px] h-[68px] rounded-full bg-green-500 dark:bg-brand-accent shadow-xl shadow-green-500/40 text-white dark:text-black z-50 transition-transform active:scale-95" style="bottom: 80px; right: 20px;">
+    <span id="drag-t-count" class="text-2xl font-black leading-none mt-1">{{ obj.repeats }}</span>
+    <span class="text-[9px] font-bold opacity-80 uppercase mt-0.5">+ bos</span>
+  </div>
+
 </div>
 
+<!-- AUDIO VA TAFSIR MODALLARI (Eskidek saqlangan, qisqartirilmadi) -->
 <!-- AUDIO SOZLAMALAR MODALI -->
 <div id="audio-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center sm:px-4 pb-16 sm:pb-0">
   <div class="bg-white dark:bg-brand-surf w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-    <div class="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-      <h3 class="font-bold text-gray-900 dark:text-white">⚙️ Audio sozlamalari</h3>
+    <div class="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+      <h3 class="font-bold text-gray-900 dark:text-white text-sm">🎙 Audio sozlamalari</h3>
       <button onclick="closeAudioSettings()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
     </div>
-    <div class="p-5 space-y-5">
+    <div class="p-5 space-y-4">
       <div>
-        <label class="text-xs font-medium text-gray-500 mb-2 block">Qorini tanlang</label>
-        <div class="relative">
-          <select id="qori-select" onchange="changeQori()" class="w-full appearance-none bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 dark:text-white outline-none">
-            <option value="alafasy">Mishary Alafasy</option>
-            <option value="muaiqly">Maher Al-Muaiqly</option>
-            {% if obj.custom_audio %}<option value="custom">🎧 {{ obj.custom_audio_title }}</option>{% endif %}
-          </select>
-          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
-        </div>
+        <label class="text-[11px] font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Qorini tanlang</label>
+        <select id="qori-select" onchange="changeQori()" class="w-full bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white outline-none">
+          <option value="alafasy">🕌 Mishary Alafasy</option>
+          <option value="husary">📖 Khalil Al-Husary</option>
+          <option value="muaiqly">🕋 Maher Al-Muaiqly</option>
+          <option value="minshawi">✨ Siddiq Al-Minshawi</option>
+          <option value="abdulbasit">👑 AbdulBaset AbdulSamad</option>
+          {% if obj.custom_audio %}<option value="custom">🎧 {{ obj.custom_audio_title }}</option>{% endif %}
+        </select>
       </div>
+
       <div>
-        <label class="text-xs font-medium text-gray-500 mb-2 block">Oyat necha marta qaytarilsin?</label>
-        <div class="relative">
-          <select id="audio-repeat-select" class="w-full appearance-none bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-medium text-gray-900 dark:text-white outline-none">
-            <option value="1">1 marta (To'xtaydi)</option><option value="3">3 marta</option><option value="5">5 marta</option><option value="10">10 marta</option><option value="999">Cheksiz (Loop)</option>
-          </select>
-          <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
-        </div>
+        <label class="text-[11px] font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">Avto-takror</label>
+        <select id="audio-repeat-select" class="w-full bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-900 dark:text-white outline-none">
+          <option value="1">1 marta (To'xtaydi)</option>
+          <option value="3">3 marta</option>
+          <option value="5">5 marta</option>
+          <option value="10">10 marta</option>
+          <option value="999" selected>♾ Cheksiz (Loop)</option>
+        </select>
       </div>
+
       <form method="POST" enctype="multipart/form-data" class="border-t border-gray-100 dark:border-gray-800 pt-4">
         {% csrf_token %}
-        <label class="text-xs font-medium text-gray-500 mb-2 block">O'z audiongizni yuklang</label>
+        <label class="text-[11px] font-bold text-gray-500 mb-1.5 block uppercase tracking-wider">O'z ovozingizni yuklang</label>
         <div class="flex gap-2">
-          <input type="text" name="audio_title" placeholder="Nomi (Masalan: Ustozim)" class="flex-1 bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white outline-none">
-          <label class="shrink-0 cursor-pointer bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 transition px-3 py-2 rounded-xl text-xs font-bold flex items-center">
+          <input type="text" name="audio_title" placeholder="Masalan: Ustozim" class="flex-1 bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white outline-none">
+          <label class="shrink-0 cursor-pointer bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center">
             <input type="file" name="custom_audio" accept="audio/*" class="hidden" onchange="this.form.submit()">Yuklash
           </label>
         </div>
@@ -257,13 +309,12 @@
         <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">{{ obj.tafsir_text }}</p>
         <p class="text-[10px] text-green-600 dark:text-green-500 mt-4 font-bold uppercase tracking-wider">— {{ obj.tafsir_author }}</p>
         <div class="mt-6 text-center">
-          <button onclick="showTafsirEdit()" class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition">Tahrirlash</button>
+          <button onclick="showTafsirEdit()" class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold">Tahrirlash</button>
         </div>
       {% else %}
         <div class="text-center py-6">
-          <div class="text-3xl mb-3 opacity-50">🪶</div>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Hali tafsir yoki qayd qo'shilmagan.</p>
-          <button onclick="showTafsirEdit()" class="px-4 py-2 rounded-xl bg-green-500 dark:bg-brand-accent text-white dark:text-black text-xs font-bold hover:opacity-90 transition">+ Tafsir qo'shish</button>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Bu oyat bo'yicha shaxsiy eslatma yozing.</p>
+          <button onclick="showTafsirEdit()" class="px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-bold">+ Qo'shish</button>
         </div>
       {% endif %}
     </div>
@@ -273,236 +324,33 @@
       <input type="hidden" name="action" value="save_tafsir">
       <div>
         <label class="text-xs font-medium text-gray-500 mb-1 block">Tafsir matni</label>
-        <textarea name="tafsir_text" rows="5" required placeholder="Bu oyatdan nima o'rgandingiz? Tafsirini yozing..." class="w-full bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-green-500">{{ obj.tafsir_text|default:'' }}</textarea>
+        <textarea name="tafsir_text" rows="5" required class="w-full bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white outline-none">{{ obj.tafsir_text|default:'' }}</textarea>
       </div>
       <div>
         <label class="text-xs font-medium text-gray-500 mb-1 block">Muallif (Manba)</label>
-        <input type="text" name="tafsir_author" value="{{ obj.tafsir_author|default:'O\'zim' }}" placeholder="Masalan: Shayx Muhammad Sodiq Muhammad Yusuf" class="w-full bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-green-500">
+        <input type="text" name="tafsir_author" value="{{ obj.tafsir_author|default:'O\'zim' }}" class="w-full bg-gray-50 dark:bg-brand-card border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white outline-none">
       </div>
-      <div class="flex gap-2 pt-2">
-        {% if obj.tafsir_text %}
-        <button type="button" onclick="hideTafsirEdit()" class="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 transition text-xs">Bekor</button>
-        {% endif %}
-        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-green-500 dark:bg-brand-accent text-white dark:text-black font-bold hover:opacity-90 transition text-xs">Saqlash</button>
+      <div class="flex gap-2">
+        <button type="button" onclick="hideTafsirEdit()" class="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 font-bold text-xs">Bekor</button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-green-600 text-white font-bold text-xs">Saqlash</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-  // Toggle funksiyasi
-  function setMemoMode(mode) {
-    const btnVerse = document.getElementById('btn-memo-verse');
-    const btnMushaf = document.getElementById('btn-memo-mushaf');
-    const viewVerse = document.getElementById('memo-view-verse');
-    const viewMushaf = document.getElementById('memo-view-mushaf');
-
-    if (mode === 'verse') {
-      btnVerse.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all";
-      btnMushaf.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all";
-      viewVerse.classList.remove('hidden');
-      viewMushaf.classList.add('hidden');
-      localStorage.setItem('quranMemoMode', 'verse');
-    } else {
-      btnMushaf.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all";
-      btnVerse.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all";
-      viewVerse.classList.add('hidden');
-      viewMushaf.classList.remove('hidden');
-      localStorage.setItem('quranMemoMode', 'mushaf');
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const savedMode = localStorage.getItem('quranMemoMode') || 'verse';
-    setMemoMode(savedMode);
-  });
-
-  // Qolgan JS kodlari (Tasbeh, Audio, Modal)
   const CSRF = '{{ csrf_token }}';
   const REPEAT_URL = '{% url "api_repeat" surah_id ayah_id %}';
   const MEMO_URL = '{% url "api_memorize" surah_id ayah_id %}';
+  const PAGE_NUMBER = {{ page_number }};
+  const TARGET_VERSE_KEY = '{{ surah_id }}:{{ ayah_id }}';
 
   let count = {{ obj.repeats }};
   let isMemo = {{ obj.is_memorized|yesno:"true,false" }};
-  let target = 10;
-  let currentPlayCount = 0;
+  let target = parseInt(localStorage.getItem('tasbehTarget')) || 10;
+  let isDragTasbehOn = localStorage.getItem('dragTasbehOn') === 'true';
 
-  function updateRing() {
-    const pct = Math.min(count / target, 1);
-    const offset = 314 * (1 - pct);
-    document.getElementById('progress-ring').style.strokeDashoffset = offset;
-    document.getElementById('tasbeh-count').textContent = count;
-  }
-
-  function updateTarget() {
-    target = parseInt(document.getElementById('target-select').value);
-    updateRing();
-  }
-
-  async function doRepeat() {
-    count++;
-    updateRing();
-    if (navigator.vibrate) navigator.vibrate(30);
-
-    await fetch(REPEAT_URL, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': CSRF }
-    }).catch(console.error);
-  }
-
-  function resetTasbeh() {
-    if (confirm('Noldan boshlansinmi?')) {
-      count = 0;
-      updateRing();
-    }
-  }
-
-  async function doMemorize() {
-    const btn = document.getElementById('memorize-btn');
-    try {
-      const res = await fetch(MEMO_URL, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': CSRF,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await res.json();
-      isMemo = data.is_memorized;
-      count = data.repeats;
-      updateRing();
-
-      if (isMemo) {
-        btn.className = `w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-green-500 text-white shadow-md shadow-green-500/20 border-none`;
-        btn.innerHTML = `<span class="text-base">✨</span> Yodlandi`;
-      } else {
-        btn.className = `w-full max-w-xs py-2.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 hover:border-green-300`;
-        btn.innerHTML = `<span class="text-base">🧠</span> Yodladim`;
-      }
-    } catch (error) {
-      console.error('Yodlashda xatolik:', error);
-    }
-  }
-
-  function toggleTransliteration() {
-    document.getElementById('ayah-trans').classList.toggle('hidden');
-  }
-
-  const AUDIO_URLS = {
-    alafasy: '{{ audio_url }}',
-    muaiqly: '{{ audio_url_muaiqly }}',
-    custom: '{% if obj.custom_audio %}{{ obj.custom_audio.url }}{% endif %}'
-  };
-
-  const player = document.getElementById('audio-player');
-  const playBtn = document.getElementById('play-btn');
-  const audioStatus = document.getElementById('audio-status');
-  const qoriSelect = document.getElementById('qori-select');
-  const repeatSelect = document.getElementById('audio-repeat-select');
-
-  const savedQori = localStorage.getItem('selectedQori') || 'alafasy';
-  if (AUDIO_URLS[savedQori]) {
-    qoriSelect.value = savedQori;
-    player.src = AUDIO_URLS[savedQori];
-    document.getElementById('current-qori-name').textContent = qoriSelect.options[qoriSelect.selectedIndex].text;
-  }
-
-  function toggleAudio() {
-    if (player.paused) {
-      player.play();
-      playBtn.innerHTML = '⏸';
-      audioStatus.textContent = "O'qilmoqda...";
-    } else {
-      player.pause();
-      playBtn.innerHTML = '▶';
-      audioStatus.textContent = "To'xtatilgan";
-    }
-  }
-
-  player.onended = () => {
-    const maxRepeats = parseInt(repeatSelect.value);
-    currentPlayCount++;
-    if (currentPlayCount < maxRepeats) {
-      player.play();
-      audioStatus.textContent = `Takror: ${currentPlayCount}/${maxRepeats}`;
-    } else {
-      playBtn.innerHTML = '▶';
-      audioStatus.textContent = "Yakunlandi";
-      currentPlayCount = 0;
-    }
-  };
-
-  function changeQori() {
-    const qori = qoriSelect.value;
-    localStorage.setItem('selectedQori', qori);
-    player.src = AUDIO_URLS[qori];
-    document.getElementById('current-qori-name').textContent = qoriSelect.options[qoriSelect.selectedIndex].text;
-    currentPlayCount = 0;
-    player.play();
-    playBtn.innerHTML = '⏸';
-    audioStatus.textContent = "O'qilmoqda...";
-  }
-
-  function openAudioSettings() { document.getElementById('audio-modal').classList.remove('hidden'); }
-  function closeAudioSettings() { document.getElementById('audio-modal').classList.add('hidden'); }
-  function openTafsirModal() {
-    document.getElementById('tafsir-modal').classList.remove('hidden');
-    document.getElementById('tafsir-view-mode').classList.remove('hidden');
-    document.getElementById('tafsir-edit-mode').classList.add('hidden');
-  }
-  function closeTafsirModal() { document.getElementById('tafsir-modal').classList.add('hidden'); }
-  function showTafsirEdit() {
-    document.getElementById('tafsir-view-mode').classList.add('hidden');
-    document.getElementById('tafsir-edit-mode').classList.remove('hidden');
-  }
-  function hideTafsirEdit() {
-    document.getElementById('tafsir-view-mode').classList.remove('hidden');
-    document.getElementById('tafsir-edit-mode').classList.add('hidden');
-  }
-
-  updateRing();
-
-  // --- ZOOM MANTIQI ---
-  let currentFontSize = parseInt(localStorage.getItem('verseFontSize')) || 36;
-  let currentMushafScale = parseFloat(localStorage.getItem('mushafScale')) || 1;
-
-  function applyFontSize() {
-    const verseText = document.getElementById('verse-text');
-    if (verseText) {
-      verseText.style.fontSize = currentFontSize + 'px';
-    }
-  }
-
-  function changeFontSize(change) {
-    currentFontSize += change;
-    if (currentFontSize < 20) currentFontSize = 20; // Minimal o'lcham
-    if (currentFontSize > 100) currentFontSize = 100; // Maksimal o'lcham
-    localStorage.setItem('verseFontSize', currentFontSize);
-    applyFontSize();
-  }
-
-  function applyMushafScale() {
-    const mushafPage = document.getElementById('mushaf-page');
-    if (mushafPage) {
-      mushafPage.style.setProperty('--mushaf-scale', currentMushafScale);
-    }
-  }
-
-  function changeMushafScale(change) {
-    currentMushafScale = Math.max(0.72, Math.min(1.18, currentMushafScale + change));
-    currentMushafScale = Math.round(currentMushafScale * 100) / 100;
-    localStorage.setItem('mushafScale', currentMushafScale);
-    applyMushafScale();
-  }
-
-  function resetMushafScale() {
-    currentMushafScale = 1;
-    localStorage.setItem('mushafScale', currentMushafScale);
-    applyMushafScale();
-  }
-  // --------------------
-
-  // Toggle funksiyasi
+  // --- REJIMLAR: Oyat / Mushaf ---
   function setMemoMode(mode) {
     const btnVerse = document.getElementById('btn-memo-verse');
     const btnMushaf = document.getElementById('btn-memo-mushaf');
@@ -512,29 +360,233 @@
     const mushafZoomControls = document.getElementById('mushaf-zoom-controls');
 
     if (mode === 'verse') {
-      btnVerse.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all";
-      btnMushaf.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all";
-      viewVerse.classList.remove('hidden');
-      viewMushaf.classList.add('hidden');
-      if(zoomControls) zoomControls.classList.remove('hidden');
-      if(mushafZoomControls) mushafZoomControls.classList.add('hidden');
-      localStorage.setItem('quranMemoMode', 'verse');
+      btnVerse.className = "px-3.5 py-1.5 text-[11px] sm:text-xs font-bold rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm transition-all";
+      btnMushaf.className = "px-3.5 py-1.5 text-[11px] sm:text-xs font-bold rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all transparent";
+      viewVerse.classList.remove('hidden'); viewMushaf.classList.add('hidden');
+      zoomControls.classList.remove('hidden'); mushafZoomControls.classList.add('hidden');
+      mushafZoomControls.classList.remove('flex');
     } else {
-      btnMushaf.className = "px-4 py-1.5 text-xs font-bold rounded-lg bg-white dark:bg-brand-surf shadow-sm text-gray-900 dark:text-white transition-all";
-      btnVerse.className = "px-4 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all";
-      viewVerse.classList.add('hidden');
-      viewMushaf.classList.remove('hidden');
-      if(zoomControls) zoomControls.classList.add('hidden');
-      if(mushafZoomControls) mushafZoomControls.classList.remove('hidden');
-      localStorage.setItem('quranMemoMode', 'mushaf');
+      btnMushaf.className = "px-3.5 py-1.5 text-[11px] sm:text-xs font-bold rounded-md bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm transition-all";
+      btnVerse.className = "px-3.5 py-1.5 text-[11px] sm:text-xs font-bold rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all transparent";
+      viewVerse.classList.add('hidden'); viewMushaf.classList.remove('hidden');
+      zoomControls.classList.add('hidden'); mushafZoomControls.classList.remove('hidden');
+      mushafZoomControls.classList.add('flex');
+    }
+    localStorage.setItem('quranMemoMode', mode);
+  }
+
+  // --- BLUR VA FOKUS ---
+  function toggleBlurMode() {
+    const ws = document.getElementById('memo-workspace');
+    const btn = document.getElementById('btn-blur-test');
+    ws.classList.toggle('blur-test-mode');
+    const active = ws.classList.contains('blur-test-mode');
+    btn.innerHTML = active ? '🙈 Yashirilgan' : '👁 Yoddan sinash';
+    btn.classList.toggle('bg-green-500', active);
+    btn.classList.toggle('text-white', active);
+    if(window.SoundFX) SoundFX.pop();
+  }
+
+  function toggleMushafFocus() {
+    const page = document.getElementById('mushaf-page');
+    const btn = document.getElementById('btn-mushaf-focus');
+    page.classList.toggle('mushaf-laser-focus');
+    const active = page.classList.contains('mushaf-laser-focus');
+    btn.classList.toggle('bg-green-500', active);
+    btn.classList.toggle('text-white', active);
+    if(window.SoundFX) SoundFX.pop();
+  }
+
+  function handleMushafWordClick(el) {
+    if (el.classList.contains('mushaf-target-w')) {
+      el.classList.toggle('revealed');
+      if(window.SoundFX) SoundFX.pop();
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const savedMode = localStorage.getItem('quranMemoMode') || 'verse';
-    setMemoMode(savedMode);
-    applyFontSize(); // Sahifa yuklanganda saqlangan shriftni qo'llash
-    applyMushafScale();
+  // --- TASBEH LOGIKASI ---
+  function updateUI() {
+    const pct = Math.min((count / target) * 100, 100);
+    const offset = 314 * (1 - (pct/100));
+    
+    document.getElementById('tasbeh-count').textContent = count;
+    document.getElementById('progress-ring').style.strokeDashoffset = offset;
+    document.getElementById('repeat-num').textContent = count;
+    document.getElementById('target-select').value = target;
+    document.getElementById('drag-t-count').textContent = count;
+  }
+
+  function updateTarget() {
+    target = parseInt(document.getElementById('target-select').value);
+    localStorage.setItem('tasbehTarget', target);
+    updateUI();
+  }
+
+  async function doRepeat() {
+    count++;
+    updateUI();
+    if (window.SoundFX) {
+      if (count === target) SoundFX.chime();
+      else SoundFX.tasbehClick();
+    }
+    if (navigator.vibrate) navigator.vibrate(count === target ? [50,40,80] : 25);
+    await fetch(REPEAT_URL, { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+  }
+
+  async function resetTasbeh() {
+    if (!confirm('Takror sanog\'ini 0 ga tushirmoqchimisiz?')) return;
+    count = 0; updateUI();
+    await fetch(REPEAT_URL + '?reset=1', { method: 'POST', headers: { 'X-CSRFToken': CSRF } });
+  }
+
+  async function doMemorize() {
+    const btn = document.getElementById('memorize-btn');
+    try {
+      const res = await fetch(MEMO_URL, { method: 'POST', headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' } });
+      const data = await res.json();
+      isMemo = data.is_memorized;
+      count = data.repeats;
+      updateUI();
+      if(window.SoundFX) SoundFX.chime();
+
+      if (isMemo) {
+        btn.className = "w-full max-w-xs py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm bg-green-500 text-white border-none";
+        btn.innerHTML = "✨ Yodlandi";
+      } else {
+        btn.className = "w-full max-w-xs py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm bg-white dark:bg-brand-surf border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-green-500";
+        btn.innerHTML = "🧠 Yodladim";
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  // --- DRAGGABLE (SUZUVCHI) TASBEH LOGIKASI ---
+  const dragTasbeh = document.getElementById('draggable-tasbeh');
+  const dragToggleBtn = document.getElementById('btn-drag-toggle');
+
+  function updateDragToggleUI() {
+    if (isDragTasbehOn) {
+      dragTasbeh.classList.remove('hidden');
+      dragTasbeh.classList.add('flex');
+      dragToggleBtn.innerHTML = "🕹 Suzuvchi Tasbeh: ON";
+      dragToggleBtn.classList.add('text-green-500', 'bg-green-50', 'dark:bg-green-900/20');
+    } else {
+      dragTasbeh.classList.add('hidden');
+      dragTasbeh.classList.remove('flex');
+      dragToggleBtn.innerHTML = "🕹 Suzuvchi Tasbeh: OFF";
+      dragToggleBtn.classList.remove('text-green-500', 'bg-green-50', 'dark:bg-green-900/20');
+    }
+  }
+
+  function toggleDraggableTasbeh() {
+    isDragTasbehOn = !isDragTasbehOn;
+    localStorage.setItem('dragTasbehOn', isDragTasbehOn);
+    updateDragToggleUI();
+    if(window.SoundFX) SoundFX.pop();
+  }
+
+  // Barmoq bilan surish (Drag and Drop / Touch) mantiqi
+  let isDragging = false;
+  let startX, startY;
+
+  dragTasbeh.addEventListener('pointerdown', (e) => {
+    isDragging = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    dragTasbeh.setPointerCapture(e.pointerId);
+    
+    dragTasbeh.onpointermove = (ev) => {
+      // Agar barmoq/sichqoncha 5 pikseldan ko'p surilsa, bu "Drag" (surish) deb hisoblanadi
+      if (Math.abs(ev.clientX - startX) > 5 || Math.abs(ev.clientY - startY) > 5) {
+        isDragging = true;
+        let newX = ev.clientX - dragTasbeh.offsetWidth / 2;
+        let newY = ev.clientY - dragTasbeh.offsetHeight / 2;
+        
+        // Ekrab chegarasidan chiqib ketmasligi uchun:
+        newX = Math.max(0, Math.min(window.innerWidth - dragTasbeh.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - dragTasbeh.offsetHeight, newY));
+
+        dragTasbeh.style.left = newX + 'px';
+        dragTasbeh.style.top = newY + 'px';
+        dragTasbeh.style.bottom = 'auto';
+        dragTasbeh.style.right = 'auto';
+      }
+    };
   });
+
+  dragTasbeh.addEventListener('pointerup', (e) => {
+    dragTasbeh.onpointermove = null;
+    dragTasbeh.releasePointerCapture(e.pointerId);
+    // Agar surilmagan bo'lsa (shunchaki bosilgan bo'lsa) - Tasbehni sanaymiz!
+    if (!isDragging) {
+      doRepeat();
+    }
+  });
+
+
+  // --- AUDIO PLEYER LOGIKASI (QISQARTIRILGAN) ---
+  const AUDIO_URLS = { alafasy: '{{ audio_url }}', husary: '{{ audio_url_husary }}', muaiqly: '{{ audio_url_muaiqly }}', minshawi: '{{ audio_url_minshawi }}', abdulbasit: '{{ audio_url_abdulbasit }}', custom: '{% if obj.custom_audio %}{{ obj.custom_audio.url }}{% endif %}' };
+  const player = document.getElementById('audio-player');
+  const playBtn = document.getElementById('play-btn');
+  let currentPlayCount = 0;
+
+  function toggleAudio() {
+    if (player.paused) { player.play(); playBtn.innerHTML = '⏸'; }
+    else { player.pause(); playBtn.innerHTML = '▶'; }
+  }
+  player.onended = () => {
+    const repeatSelect = document.getElementById('audio-repeat-select');
+    const maxRepeats = parseInt(repeatSelect.value);
+    currentPlayCount++;
+    if (currentPlayCount < maxRepeats) player.play();
+    else { playBtn.innerHTML = '▶'; currentPlayCount = 0; }
+  };
+  function changeQori() {
+    const qori = document.getElementById('qori-select').value;
+    localStorage.setItem('selectedQori', qori);
+    player.src = AUDIO_URLS[qori]; currentPlayCount = 0; player.play(); playBtn.innerHTML = '⏸';
+  }
+
+  function toggleTransliteration() { document.getElementById('ayah-trans').classList.toggle('hidden'); }
+  function openAudioSettings() { document.getElementById('audio-modal').classList.remove('hidden'); }
+  function closeAudioSettings() { document.getElementById('audio-modal').classList.add('hidden'); }
+  function openTafsirModal() { document.getElementById('tafsir-modal').classList.remove('hidden'); document.getElementById('tafsir-view-mode').classList.remove('hidden'); document.getElementById('tafsir-edit-mode').classList.add('hidden'); }
+  function closeTafsirModal() { document.getElementById('tafsir-modal').classList.add('hidden'); }
+  function showTafsirEdit() { document.getElementById('tafsir-view-mode').classList.add('hidden'); document.getElementById('tafsir-edit-mode').classList.remove('hidden'); }
+  function hideTafsirEdit() { document.getElementById('tafsir-view-mode').classList.remove('hidden'); document.getElementById('tafsir-edit-mode').classList.add('hidden'); }
+
+  // --- ZOOM MANTIQI ---
+  let currentFontSize = parseInt(localStorage.getItem('verseFontSize')) || 36;
+  let currentMushafScale = parseFloat(localStorage.getItem('mushafScale')) || 1;
+
+  function applyFontSize() { const vt = document.getElementById('verse-text'); if(vt) vt.style.fontSize = currentFontSize + 'px'; }
+  function changeFontSize(d) { currentFontSize = Math.max(20, Math.min(100, currentFontSize + d)); localStorage.setItem('verseFontSize', currentFontSize); applyFontSize(); }
+  function applyMushafScale() { const mp = document.getElementById('mushaf-page'); if(mp) mp.style.setProperty('--mushaf-scale', currentMushafScale); }
+  function changeMushafScale(d) { currentMushafScale = Math.round(Math.max(0.7, Math.min(1.2, currentMushafScale + d)) * 100)/100; localStorage.setItem('mushafScale', currentMushafScale); applyMushafScale(); }
+  function resetMushafScale() { currentMushafScale = 1; localStorage.setItem('mushafScale', 1); applyMushafScale(); }
+
+  // KLAVIATURA
+  document.addEventListener('keydown', (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.code === 'Space') { e.preventDefault(); doRepeat(); }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setMemoMode(localStorage.getItem('quranMemoMode') || 'mushaf');
+    updateTarget();
+    updateDragToggleUI();
+    applyFontSize();
+    applyMushafScale();
+
+    const savedQori = localStorage.getItem('selectedQori') || 'alafasy';
+    if (AUDIO_URLS[savedQori]) {
+      document.getElementById('qori-select').value = savedQori;
+      player.src = AUDIO_URLS[savedQori];
+    }
+  });
+
+  // Backend sahifa o'tkazish uchun placeholder
+  function goToPage(offset) {
+    alert("Backendda '/quran/page/NUM' yo'nalishi (URL) ochilganda, bu tugma ishga tushadi. Sahifalar qatori uchun zo'r funksiya bo'ladi!");
+  }
 </script>
 {% endblock %}

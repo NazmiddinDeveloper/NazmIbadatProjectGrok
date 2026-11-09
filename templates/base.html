@@ -1,315 +1,597 @@
-  {% load static %}
+{% load static %}
 <!DOCTYPE html>
-<html lang="uz" class="dark">
+<html lang="uz" class="dark" data-theme="cyber">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}SA'Y{% endblock %}</title>
-  
-<style>
-    /* Ochiq CDN serverdan Uthmanic shriftini ulash */
-    @font-face {
-        font-family: 'UthmanicHafs';
-        src: url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.woff2') format('woff2'),
-             url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.woff') format('woff'),
-             url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.ttf') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-        font-display: swap;
-    }
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{% block title %}SA'Y — Build Every Day{% endblock %}</title>
 
-    /* Shriftni qo'llash */
-    .font-quran { 
-        font-family: 'UthmanicHafs', Arial, sans-serif; 
-        line-height: 2.2; 
-    }
-
-    /* === TAJWEED RANGLARI (Quran.com API klasslariga 100% moslandi) === */
-    tajweed {
-        display: inline;
-    }
-
-    /* 1. Silent letter (O'qilmaydigan harflar) - Kulrang */
-    tajweed.ham_wasl,
-    tajweed.slnt,
-    tajweed.laam_shamsiyah,
-    tajweed.idgham_wo_ghunnah {
-        color: #A0A5A8 !important;
-    }
-
-    /* 2. Normal madd (2 harakat) - To'q tilla/Xantal rang */
-    tajweed.madda_normal {
-        color: #B78C3F !important;
-    }
-
-    /* 3. Separated madd (2/4/6 harakat) - Apelsin rang (Orange) */
-    tajweed.madda_permissible {
-        color: #E67E22 !important;
-    }
-
-    /* 4. Connected madd (4/5 harakat) - Qizil */
-    tajweed.madda_obligatory {
-        color: #FF0000 !important;
-    }
-
-    /* 5. Necessary madd (6 harakat) - To'q qizil */
-    tajweed.madda_necessary {
-        color: #8B0000 !important;
-    }
-
-    /* 6. Ghunna / Ikhfa' - Yashil 
-    tajweed.ghunnah,
-    tajweed.ikhafa,
-    tajweed.ikhafa_shafawi,
-    tajweed.idgham_ghunnah,
-    tajweed.iqlab,
-    tajweed.idgham_mutajanisayn,
-    tajweed.idgham_mutaqaribayn {
-        color: #00B300 !important;
-    }
-    */
-    /* 7. Qalqala (Echo) - Havorang (Cyan) */
-    tajweed.qalaqah {
-        color: #00BFFF !important;
-    }
-
-    /* 8. Tafkhim (Heavy/Yo'g'on harflar) - Ko'k (Blue) */
-    tajweed.tafkhim {
-        color: #0040FF !important;
-    }
-    /* TAJVIDNI O'CHIRISH UCHUN KLASS */
-    body.tajweed-off tajweed { color: inherit !important; }
-</style>
-
-  <script>
-    if (localStorage.getItem('theme') === 'light') {
-      document.documentElement.classList.remove('dark');
-    }
-  </script>
+  <!-- Lucide Icons & Tailwind CSS -->
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <script>
+    (function() {
+      const savedTheme = localStorage.getItem('appTheme') || 'cyber';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      if (savedTheme === 'light' || savedTheme === 'parchment') {
+        document.documentElement.classList.remove('dark');
+      } else {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           colors: {
             brand: {
-              bg:      '#07111F',
-              surf:    '#0B1628',
-              card:    '#122038',
-              accent:  '#7CFF4F',
+              bg:     'var(--brand-bg)',
+              surf:   'var(--brand-surf)',
+              card:   'var(--brand-card)',
+              accent: 'var(--brand-accent)',
             }
           }
         }
       }
     }
   </script>
+
+  <style>
+    /* ======================================================================
+       1. 4-XIL GLOBAL TEMA TIZIMI (MULTI-THEME ENGINE)
+       ====================================================================== */
+    :root, [data-theme="light"] {
+      --brand-bg: #F8FAFC;
+      --brand-surf: #FFFFFF;
+      --brand-card: #F1F5F9;
+      --brand-accent: #10B981;
+    }
+
+    [data-theme="cyber"] {
+      --brand-bg: #07111F;
+      --brand-surf: #0B1628;
+      --brand-card: #122038;
+      --brand-accent: #7CFF4F;
+    }
+
+    [data-theme="emerald"] {
+      --brand-bg: #041511;
+      --brand-surf: #08221C;
+      --brand-card: #0E3128;
+      --brand-accent: #34D399;
+    }
+
+    [data-theme="parchment"] {
+      --brand-bg: #F5EFE0;
+      --brand-surf: #FBF8F1;
+      --brand-card: #EDE4CE;
+      --brand-accent: #1B4332;
+    }
+
+    [data-theme="parchment"] .bg-white { background-color: #FBF8F1 !important; }
+    [data-theme="parchment"] .bg-gray-50 { background-color: #F2EBDC !important; }
+    [data-theme="parchment"] .border-gray-200,
+    [data-theme="parchment"] .border-gray-100 { border-color: #DFD3BC !important; }
+
+    /* ======================================================================
+       2. UTHMANIC SHRIFT VA 100% QURAN.COM TAJVID RANGLARI
+       ====================================================================== */
+    @font-face {
+      font-family: 'UthmanicHafs';
+      src: url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.woff2') format('woff2'),
+           url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.woff') format('woff'),
+           url('https://db.onlinewebfonts.com/t/2c1ce06a505728976c1d2993407312b5.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    .font-quran {
+      font-family: 'UthmanicHafs', Arial, sans-serif;
+      line-height: 2.3;
+    }
+
+    tajweed {
+      display: inline;
+      transition: color 0.2s ease;
+    }
+
+    /* 1. Silent / O'qilmaydigan harflar - Kulrang */
+    tajweed.ham_wasl,
+    tajweed.slnt,
+    tajweed.laam_shamsiyah,
+    tajweed.idgham_wo_ghunnah,
+    tajweed.idgham_mutajanisayn,
+    tajweed.idgham_mutaqaribayn {
+      color: #9CA3AF !important;
+    }
+    html.dark tajweed.ham_wasl,
+    html.dark tajweed.slnt,
+    html.dark tajweed.laam_shamsiyah,
+    html.dark tajweed.idgham_wo_ghunnah {
+      color: #64748B !important;
+    }
+
+    /* 2. Tabiiy Madd (2 harakat) - Tilla rang */
+    tajweed.madda_normal { color: #D97706 !important; }
+    html.dark tajweed.madda_normal { color: #FBBF24 !important; }
+
+    /* 3. Jaiz Madd (2/4/6 harakat) - Apelsin rang */
+    tajweed.madda_permissible { color: #EA580C !important; }
+    html.dark tajweed.madda_permissible { color: #FB923C !important; }
+
+    /* 4. Vojib Madd (4-5 harakat) - Qizil-pushti */
+    tajweed.madda_obligatory,
+    tajweed.madda_obligatory_mottasel,
+    tajweed.madda_obligatory_monfasel { color: #E11D48 !important; }
+    html.dark tajweed.madda_obligatory,
+    html.dark tajweed.madda_obligatory_mottasel,
+    html.dark tajweed.madda_obligatory_monfasel { color: #FB7185 !important; }
+
+    /* 5. Lozim Madd (6 harakat) - To'q Qizil */
+    tajweed.madda_necessary { color: #B91C1C !important; }
+    html.dark tajweed.madda_necessary { color: #EF4444 !important; }
+
+    /* 6. G'unna, Ixfo va Idg'om - Yashil */
+    tajweed.ghunnah,
+    tajweed.ikhafa,
+    tajweed.ikhafa_shafawi,
+    tajweed.idgham_ghunnah,
+    tajweed.idgham_shafawi { color: #16A34A !important; }
+    html.dark tajweed.ghunnah,
+    html.dark tajweed.ikhafa,
+    html.dark tajweed.ikhafa_shafawi,
+    html.dark tajweed.idgham_ghunnah,
+    html.dark tajweed.idgham_shafawi { color: #4ADE80 !important; }
+
+    /* 7. Iqlob - Binafsha */
+    tajweed.iqlab { color: #9333EA !important; }
+    html.dark tajweed.iqlab { color: #C084FC !important; }
+
+    /* 8. Qalqala - Havorang */
+    tajweed.qalaqah { color: #0284C7 !important; }
+    html.dark tajweed.qalaqah { color: #38BDF8 !important; }
+
+    /* 9. Tafxim (Yo'g'on harflar) - Ko'k */
+    tajweed.tafkhim { color: #1D4ED8 !important; }
+    html.dark tajweed.tafkhim { color: #60A5FA !important; }
+
+    span.end { display: none !important; }
+    body.tajweed-off tajweed { color: inherit !important; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 9999px; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
 </head>
-<body class="bg-gray-50 dark:bg-brand-bg text-gray-800 dark:text-gray-200 min-h-screen">
-  
 
-  <div class="flex flex-1 overflow-hidden">
-  <aside class="hidden md:flex flex-col w-52 bg-white dark:bg-brand-surf border-r border-gray-200 dark:border-gray-800 px-3 py-5 shrink-0">
-
-  <div class="flex items-center gap-2 px-2 mb-8">
-    <div class="w-8 h-8 rounded-lg bg-green-500 dark:bg-brand-accent flex items-center justify-center text-white dark:text-black font-bold">
-      S
-    </div>
-    <div>
-      <div class="text-sm font-bold text-gray-900 dark:text-white">
-        SA'Y
-      </div>
-      <div class="text-[10px] text-gray-400 tracking-widest">
-        BUILD EVERY DAY
-      </div>
-    </div>
-  </div>
+<body class="bg-brand-bg text-gray-800 dark:text-gray-200 min-h-screen transition-colors duration-300">
 
   {% url 'home' as url_home %}
+  {% url 'quran_home' as url_quran %}
   {% url 'ibodat' as url_ibodat %}
   {% url 'prayer_history' as url_prayer_history %}
   {% url 'smenalar' as url_smenalar %}
-  {% url 'quran_home' as url_quran %}
+  {% url 'statistika' as url_statistika %}
 
+  <div class="flex h-screen overflow-hidden">
+    
+    <!-- DESKTOP SIDEBAR -->
+    {% if user.is_authenticated %}
+    <aside class="hidden md:flex flex-col w-60 bg-white dark:bg-brand-surf border-r border-gray-200 dark:border-gray-800/80 px-3.5 py-5 shrink-0 select-none">
+      
+      <!-- Logo -->
+      <a href="{{ url_home }}" class="flex items-center gap-3 px-2 mb-6 group">
+        <div class="w-9 h-9 rounded-xl bg-green-600 dark:bg-brand-accent flex items-center justify-center text-white dark:text-black font-black text-base shadow-lg shadow-green-500/20 group-hover:scale-105 transition">
+          S
+        </div>
+        <div>
+          <div class="text-sm font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">SA'Y</div>
+          <div class="text-[10px] text-gray-400 font-semibold tracking-widest mt-1">BUILD EVERY DAY</div>
+        </div>
+      </a>
 
-  <nav class="flex-1 space-y-1">
+      <!-- Navigation -->
+      <nav class="flex-1 space-y-1">
+        <a href="{{ url_home }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+           {% if request.path == url_home %}
+             bg-green-50 dark:bg-brand-card text-green-700 dark:text-brand-accent font-semibold
+           {% else %}
+             text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card/60
+           {% endif %}">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Bosh sahifa</span>
+        </a>
 
-    <a href="{{ url_home }}"
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-       {% if request.path == url_home %}
-         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
-       {% else %}
-         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
-       {% endif %}">
-      🏠 Bosh sahifa
-    </a>
-    <a href="{{ url_quran }}"
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-       {% if request.path == url_quran %}
-         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
-       {% else %}
-         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
-       {% endif %}">
-      📖 Qur'on
-    </a>
-    <a href="{{ url_ibodat }}"
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-       {% if request.path == url_ibodat %}
-         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
-       {% else %}
-         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
-       {% endif %}">
-      🌙 Ibodat
-    </a>
+        <a href="{{ url_quran }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+           {% if '/quran/' in request.path %}
+             bg-green-50 dark:bg-brand-card text-green-700 dark:text-brand-accent font-semibold
+           {% else %}
+             text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card/60
+           {% endif %}">
+          <i data-lucide="book-open-check" class="w-4 h-4"></i>
+          <span>Qur'on (Hifz)</span>
+        </a>
 
-    <a href="{{ url_prayer_history }}"
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-       {% if request.path == url_prayer_history %}
-         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
-       {% else %}
-         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
-       {% endif %}">
-      📅 Tarix
-    </a>
+        <a href="{{ url_ibodat }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+           {% if request.path == url_ibodat %}
+             bg-green-50 dark:bg-brand-card text-green-700 dark:text-brand-accent font-semibold
+           {% else %}
+             text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card/60
+           {% endif %}">
+          <i data-lucide="moon-star" class="w-4 h-4"></i>
+          <span>Ibodat</span>
+        </a>
 
-    <a href="{{ url_smenalar }}"
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-       {% if request.path == url_smenalar %}
-         bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
-       {% else %}
-         text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
-       {% endif %}">
-      💼 Smenalar
-    </a>
-    {% url 'statistika' as url_statistika %}
+        <a href="{{ url_prayer_history }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+           {% if request.path == url_prayer_history %}
+             bg-green-50 dark:bg-brand-card text-green-700 dark:text-brand-accent font-semibold
+           {% else %}
+             text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card/60
+           {% endif %}">
+          <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+          <span>Tarix</span>
+        </a>
 
-    <a href="{{ url_statistika }}"
-      class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition
-      {% if request.path == url_statistika %}
-        bg-gray-100 dark:bg-brand-card text-green-600 dark:text-brand-accent font-medium
-      {% else %}
-        text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card
-      {% endif %}">
-      📊 Statistika
-    </a>
+        <a href="{{ url_smenalar }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+           {% if request.path == url_smenalar %}
+             bg-green-50 dark:bg-brand-card text-green-700 dark:text-brand-accent font-semibold
+           {% else %}
+             text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card/60
+           {% endif %}">
+          <i data-lucide="briefcase" class="w-4 h-4"></i>
+          <span>Smenalar</span>
+        </a>
 
-  </nav>
+        <a href="{{ url_statistika }}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+           {% if request.path == url_statistika %}
+             bg-green-50 dark:bg-brand-card text-green-700 dark:text-brand-accent font-semibold
+           {% else %}
+             text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card/60
+           {% endif %}">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>Statistika</span>
+        </a>
+      </nav>
 
-  <div class="border-t border-gray-200 dark:border-gray-800 pt-3 space-y-1">
+      <!-- Desktop Global Controls: Tajvid, 4-Theme Picker & Sound -->
+      <div class="border-t border-gray-200 dark:border-gray-800 pt-3 space-y-2">
 
-    <button id="theme-btn"
-            class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card">
-      🌓 Tema
-    </button>
+        <!-- Global Tajvid ON/OFF + Qoidalar -->
+        <div class="flex gap-1.5">
+          <button onclick="toggleTajvid()" class="tajvid-btn flex-1 px-2.5 py-2 rounded-xl text-xs font-bold transition text-center">
+            🎨 Tajvid: Yoqiq
+          </button>
+          <button onclick="openTajvidModal()" title="Tajvid qoidalari" class="px-2.5 py-2 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 hover:opacity-85 transition text-xs font-bold">
+            ℹ️
+          </button>
+        </div>
 
-    <form method="POST" action="{% url 'logout' %}">
-      {% csrf_token %}
-      <button type="submit"
-              class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-brand-card">
-        🚪 Chiqish
-      </button>
-    </form>
+        <!-- 4-Theme Selector -->
+        <div class="p-2 bg-gray-100 dark:bg-brand-card rounded-xl">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 px-1 flex items-center justify-between">
+            <span>Tema</span>
+            <span id="theme-label" class="text-green-600 dark:text-brand-accent">Cyber</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1">
+            <button onclick="setAppTheme('cyber')" data-theme-pill="cyber" title="Cyber Night" class="h-6 rounded-lg bg-[#07111F] flex items-center justify-center">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#7CFF4F]"></span>
+            </button>
+            <button onclick="setAppTheme('emerald')" data-theme-pill="emerald" title="Zumrad Tun" class="h-6 rounded-lg bg-[#041511] flex items-center justify-center">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#34D399]"></span>
+            </button>
+            <button onclick="setAppTheme('parchment')" data-theme-pill="parchment" title="Madina Sahifasi" class="h-6 rounded-lg bg-[#F5EFE0] flex items-center justify-center">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#1B4332]"></span>
+            </button>
+            <button onclick="setAppTheme('light')" data-theme-pill="light" title="Kunduzgi Oq" class="h-6 rounded-lg bg-white flex items-center justify-center">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tema Aylantirish & Ovoz & Chiqish -->
+        <div class="flex gap-1.5">
+          <button id="theme-btn" onclick="cycleAppTheme()" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-brand-card hover:opacity-90 transition">
+            <i data-lucide="sun-moon" class="w-3.5 h-3.5"></i>
+            <span>Tema</span>
+          </button>
+          <button onclick="SoundFX.toggleMute()" title="Ovoz effektlari" class="px-3 py-2 rounded-xl text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-brand-card hover:opacity-90 transition">
+            <i data-lucide="volume-2" id="sound-icon" class="w-3.5 h-3.5"></i>
+          </button>
+          <form method="POST" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" title="Chiqish" class="px-3 py-2 rounded-xl text-xs font-semibold text-red-500 bg-red-50 dark:bg-red-950/30 hover:opacity-90 transition">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </aside>
+    {% endif %}
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+      {% block content %}{% endblock %}
+    </div>
 
   </div>
 
-</aside>
-<div class="flex-1 overflow-hidden">
-    {% block content %}{% endblock %}
-</div>
-</div>
-
-<!-- MOBILE BOTTOM NAVIGATION -->
-  <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-brand-surf border-t border-gray-200 dark:border-gray-800 flex justify-around items-center pb-safe z-50 h-16">
-    <a href="{% url 'home' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_home %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
-      <span class="text-xl">🏠</span>
-      <span class="text-[9px] font-bold">Asosiy</span>
+  <!-- MOBILE BOTTOM NAVIGATION (Tema va Tajvid Sozlamalari bilan) -->
+  {% if user.is_authenticated %}
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-brand-surf/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 flex justify-around items-center z-40 h-16 px-1 select-none">
+    <a href="{{ url_home }}" class="flex flex-col items-center justify-center gap-0.5 w-full py-1 {% if request.path == url_home %}text-green-600 dark:text-brand-accent font-bold{% else %}text-gray-400{% endif %}">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span class="text-[9px]">Asosiy</span>
     </a>
-    <a href="{% url 'quran_home' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_quran %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
-      <span class="text-xl">📖</span>
-      <span class="text-[9px] font-bold">Qur'on</span>
+    <a href="{{ url_quran }}" class="flex flex-col items-center justify-center gap-0.5 w-full py-1 {% if '/quran/' in request.path %}text-green-600 dark:text-brand-accent font-bold{% else %}text-gray-400{% endif %}">
+      <i data-lucide="book-open-check" class="w-5 h-5"></i>
+      <span class="text-[9px]">Qur'on</span>
     </a>
-    <a href="{% url 'ibodat' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_ibodat %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
-      <span class="text-xl">🌙</span>
-      <span class="text-[9px] font-bold">Ibodat</span>
+    <a href="{{ url_ibodat }}" class="flex flex-col items-center justify-center gap-0.5 w-full py-1 {% if request.path == url_ibodat %}text-green-600 dark:text-brand-accent font-bold{% else %}text-gray-400{% endif %}">
+      <i data-lucide="moon-star" class="w-5 h-5"></i>
+      <span class="text-[9px]">Ibodat</span>
     </a>
-    <a href="{% url 'prayer_history' %}" class="flex flex-col items-center gap-1 w-full py-2 {% if request.path == url_prayer_history %}text-green-600 dark:text-brand-accent{% else %}text-gray-400{% endif %}">
-      <span class="text-xl">📅</span>
-      <span class="text-[9px] font-bold">Tarix</span>
+    <a href="{{ url_prayer_history }}" class="flex flex-col items-center justify-center gap-0.5 w-full py-1 {% if request.path == url_prayer_history %}text-green-600 dark:text-brand-accent font-bold{% else %}text-gray-400{% endif %}">
+      <i data-lucide="calendar-check-2" class="w-5 h-5"></i>
+      <span class="text-[9px]">Tarix</span>
     </a>
-    <a href="{% url 'statistika' %}" class="flex flex-col items-center gap-1 w-full py-2 text-gray-400">
-      <span class="text-xl">📊</span>
-      <span class="text-[9px] font-bold">Statistika</span>
+    <a href="{{ url_statistika }}" class="flex flex-col items-center justify-center gap-0.5 w-full py-1 {% if request.path == url_statistika %}text-green-600 dark:text-brand-accent font-bold{% else %}text-gray-400{% endif %}">
+      <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+      <span class="text-[9px]">Statistika</span>
     </a>
+    <button onclick="openTajvidModal()" class="flex flex-col items-center justify-center gap-0.5 w-full py-1 text-gray-400 hover:text-green-500">
+      <i data-lucide="sparkles" class="w-5 h-5"></i>
+      <span class="text-[9px]">Tajvid/Tema</span>
+    </button>
   </nav>
+  {% endif %}
 
-<script>
-  // Quran.com API'sida yetishmayotgan Tafkhim (Yo'g'on) harflarni avtomatik bo'yash
-  document.addEventListener("DOMContentLoaded", function() {
-      function applyTafkhim(node) {
-          if (node.nodeType === 3) { 
-              const text = node.nodeValue;
-              
-              // MANTIQ: 
-              // 1. خ, ص, ض, ط, ظ, غ, ق harflari va ularning harakatlari
-              // 2. "ر" (Ro) harfi, agar unda Fatha (\u064E), Damma (\u064F), Fathatan (\u064B) yoki Dammatan (\u064C) bo'lsa
-              const tafkhimRegex = /([خصضطظغق][\u064B-\u065F\u0670]*|ر[\u0651]?[\u064E\u064F\u064B\u064C][\u064B-\u065F\u0670]*)/g;
-              
-              if (tafkhimRegex.test(text)) {
-                  const wrapper = document.createElement('span');
-                  wrapper.innerHTML = text.replace(tafkhimRegex, '<tajweed class="tafkhim">$1</tajweed>');
-                  
-                  while (wrapper.firstChild) {
-                      node.parentNode.insertBefore(wrapper.firstChild, node);
-                  }
-                  node.parentNode.removeChild(node);
-              }
-          } 
-          else if (node.nodeType === 1 && node.nodeName.toLowerCase() !== 'tajweed') {
-              Array.from(node.childNodes).forEach(applyTafkhim);
-          }
+  <!-- ========================================================================
+       GLOBAL TAJVID QOIDALARI VA TEMA MODALI (MOBIL VA DESKTOP UCHUN)
+       Istalgan sahifada ℹ️ yoki ✨ bosilganda ochiladi!
+       ======================================================================== -->
+<!-- GLOBAL TAJVID QOIDALARI VA TEMA MODALI -->
+  <div id="global-tajvid-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:px-4 pb-16 sm:pb-0">
+    <div class="bg-brand-surf w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-gray-200/20 dark:border-gray-700 overflow-hidden max-h-[85vh] flex flex-col shadow-2xl transition-colors duration-300">
+      
+      <div class="p-4 border-b border-gray-500/20 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🎨</span>
+          <div>
+            <h3 class="font-bold text-gray-900 dark:text-white text-sm">Tajvid va Ko'rinish</h3>
+          </div>
+        </div>
+        <button onclick="closeTajvidModal()" class="w-8 h-8 rounded-lg bg-gray-500/10 text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center justify-center text-lg">&times;</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-4">
+        <!-- Tezkor Sozlamalar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-500/5 p-3 rounded-xl border border-gray-500/10">
+          <div class="flex items-center gap-2">
+            <button onclick="toggleTajvid()" class="tajvid-btn px-3 py-2 rounded-xl text-xs font-bold transition"></button>
+            <button onclick="SoundFX.toggleMute()" class="px-3 py-2 rounded-xl bg-gray-500/10 text-xs font-bold text-gray-800 dark:text-gray-200">🔊 Ovoz</button>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="setAppTheme('cyber')" class="w-7 h-7 rounded-lg bg-[#07111F] flex items-center justify-center"><span class="w-2.5 h-2.5 rounded-full bg-[#7CFF4F]"></span></button>
+            <button onclick="setAppTheme('emerald')" class="w-7 h-7 rounded-lg bg-[#041511] flex items-center justify-center"><span class="w-2.5 h-2.5 rounded-full bg-[#34D399]"></span></button>
+            <button onclick="setAppTheme('parchment')" class="w-7 h-7 rounded-lg bg-[#F5EFE0] border border-gray-300 flex items-center justify-center"><span class="w-2.5 h-2.5 rounded-full bg-[#1B4332]"></span></button>
+            <button onclick="setAppTheme('light')" class="w-7 h-7 rounded-lg bg-white border border-gray-300 flex items-center justify-center"><span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span></button>
+          </div>
+        </div>
+
+        <!-- Qoidalar (Tema rangiga moslashadigan dizayn) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#16A34A] dark:text-[#4ADE80] font-bold">G'unna / Ixfo</span><span class="font-quran text-lg text-[#16A34A] dark:text-[#4ADE80]" dir="rtl">إِنَّ / مَن</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#0284C7] dark:text-[#38BDF8] font-bold">Qalqala</span><span class="font-quran text-lg text-[#0284C7] dark:text-[#38BDF8]" dir="rtl">قُلْ أَعُوذُ</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#1D4ED8] dark:text-[#60A5FA] font-bold">Tafxim</span><span class="font-quran text-lg text-[#1D4ED8] dark:text-[#60A5FA]" dir="rtl">ٱلصِّرَٰطَ</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#9333EA] dark:text-[#C084FC] font-bold">Iqlob</span><span class="font-quran text-lg text-[#9333EA] dark:text-[#C084FC]" dir="rtl">مِنۢ بَعْدِ</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#D97706] dark:text-[#FBBF24] font-bold">Madd (2)</span><span class="font-quran text-lg text-[#D97706] dark:text-[#FBBF24]" dir="rtl">مَـٰلِكِ</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#EA580C] dark:text-[#FB923C] font-bold">Jaiz Madd</span><span class="font-quran text-lg text-[#EA580C] dark:text-[#FB923C]" dir="rtl">ٱلْعَـٰلَمِينَ</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-[#E11D48] dark:text-[#EF4444] font-bold">Vojib Madd</span><span class="font-quran text-lg text-[#E11D48] dark:text-[#EF4444]" dir="rtl">ٱلضَّآلِّينَ</span></div>
+          <div class="p-2.5 rounded-lg bg-gray-500/5 flex justify-between items-center"><span class="text-gray-500 font-bold">O'qilmaydi</span><span class="font-quran text-lg text-gray-400" dir="rtl">ٱلشَّمْسُ</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ========================================================================
+       GLOBAL JAVASCRIPT: TEMA, TAJVID VA WEB AUDIO SYNTHESIZER
+       ======================================================================== -->
+  <script>
+    const THEMES = ['cyber', 'emerald', 'parchment', 'light'];
+    const THEME_NAMES = { cyber: 'Cyber', emerald: 'Zumrad', parchment: 'Sahifa', light: 'Kunduz' };
+
+    function setAppTheme(themeName) {
+      if (!THEMES.includes(themeName)) themeName = 'cyber';
+      const html = document.documentElement;
+      html.setAttribute('data-theme', themeName);
+      localStorage.setItem('appTheme', themeName);
+
+      if (themeName === 'light' || themeName === 'parchment') {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
       }
+
+      document.querySelectorAll('[data-theme-pill]').forEach(btn => {
+        if (btn.getAttribute('data-theme-pill') === themeName) {
+          btn.classList.add('ring-2', 'ring-green-500', 'scale-105');
+        } else {
+          btn.classList.remove('ring-2', 'ring-green-500', 'scale-105');
+        }
+      });
+
+      const label = document.getElementById('theme-label');
+      if (label) label.textContent = THEME_NAMES[themeName];
+    }
+
+    function cycleAppTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'cyber';
+      const nextIdx = (THEMES.indexOf(current) + 1) % THEMES.length;
+      setAppTheme(THEMES[nextIdx]);
+      if (window.SoundFX) SoundFX.pop();
+    }
+
+    // WEB AUDIO API SOUND ENGINE
+    window.SoundFX = {
+      ctx: null,
+      muted: localStorage.getItem('sfxMuted') === 'true',
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      },
+
+      tasbehClick() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.045);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      },
+
+      pop() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(680, now + 0.06);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.065);
+      },
+
+      chime() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.07;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.65);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.7);
+        });
+      },
+
+      toggleMute() {
+        this.muted = !this.muted;
+        localStorage.setItem('sfxMuted', this.muted);
+        this.updateUI();
+        if (!this.muted) this.pop();
+      },
+
+      updateUI() {
+        const icon = document.getElementById('sound-icon');
+        if (icon) {
+          icon.setAttribute('data-lucide', this.muted ? 'volume-x' : 'volume-2');
+          if (window.lucide) lucide.createIcons();
+        }
+      }
+    };
+
+    // Tafkhim (Yo'g'on) harflarni avtomatik bo'yash
+    window.applyTafkhimToElement = function(rootEl) {
+      function walk(node) {
+        if (node.nodeType === 3) { 
+          const text = node.nodeValue;
+          const tafkhimRegex = /([خصضطظغق][\u064B-\u065F\u0670]*|ر[\u0651]?[\u064E\u064F\u064B\u064C][\u064B-\u065F\u0670]*)/g;
+          if (tafkhimRegex.test(text)) {
+            const wrapper = document.createElement('span');
+            wrapper.innerHTML = text.replace(tafkhimRegex, '<tajweed class="tafkhim">$1</tajweed>');
+            while (wrapper.firstChild) {
+              node.parentNode.insertBefore(wrapper.firstChild, node);
+            }
+            node.parentNode.removeChild(node);
+          }
+        } else if (node.nodeType === 1 && node.nodeName.toLowerCase() !== 'tajweed' && !node.classList.contains('end')) {
+          Array.from(node.childNodes).forEach(walk);
+        }
+      }
+      Array.from(rootEl.childNodes).forEach(walk);
+    };
+
+    // Global Tajvid ON/OFF va Modal
+    function syncTajvidUI() {
+      const isOff = document.body.classList.contains('tajweed-off');
+      document.querySelectorAll('.tajvid-btn').forEach(btn => {
+        btn.innerHTML = isOff ? '⬜ Tajvid: O\'chiq' : '🎨 Tajvid: Yoqiq';
+        if (isOff) {
+          btn.className = "tajvid-btn px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition";
+        } else {
+          btn.className = "tajvid-btn px-3 py-1.5 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold transition";
+        }
+      });
+    }
+
+    function toggleTajvid() {
+      document.body.classList.toggle('tajweed-off');
+      const isOff = document.body.classList.contains('tajweed-off');
+      localStorage.setItem('tajweedState', isOff ? 'off' : 'on');
+      syncTajvidUI();
+      if (window.SoundFX) SoundFX.pop();
+    }
+
+    function openTajvidModal() {
+      document.getElementById('global-tajvid-modal').classList.remove('hidden');
+      if (window.SoundFX) SoundFX.pop();
+    }
+
+    function closeTajvidModal() {
+      document.getElementById('global-tajvid-modal').classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) lucide.createIcons();
+      setAppTheme(localStorage.getItem('appTheme') || 'cyber');
+      SoundFX.updateUI();
+
+      const state = localStorage.getItem('tajweedState') || 'on'; 
+      if (state === 'off') document.body.classList.add('tajweed-off');
+      else document.body.classList.remove('tajweed-off');
+      syncTajvidUI();
 
       document.querySelectorAll('.font-quran').forEach(el => {
-          Array.from(el.childNodes).forEach(applyTafkhim);
+        window.applyTafkhimToElement(el);
       });
-  });
-  // === TAJVID ON/OFF MANTIQI (GLOBAL) ===
-  function toggleTajvid() {
-      const body = document.body;
-      body.classList.toggle('tajweed-off');
-      const isOff = body.classList.contains('tajweed-off');
-      
-      // Xotiraga saqlaymiz
-      localStorage.setItem('tajweedState', isOff ? 'off' : 'on');
-      
-      // Barcha sahifadagi tajvid tugmalarini yangilaymiz
-      document.querySelectorAll('.tajvid-btn').forEach(btn => {
-          btn.innerHTML = isOff ? '⬜ Tajvid: O\'chiq' : '🎨 Tajvid: Yoqiq';
-          if(isOff) {
-              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition";
-          } else {
-              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold transition";
-          }
-      });
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-      // Default holat 'off' (o'chiq)
-      const state = localStorage.getItem('tajweedState') || 'off'; 
-      
-      if (state === 'off') {
-          document.body.classList.add('tajweed-off');
-      }
-      
-      document.querySelectorAll('.tajvid-btn').forEach(btn => {
-          btn.innerHTML = state === 'off' ? '⬜ Tajvid: O\'chiq' : '🎨 Tajvid: Yoqiq';
-          if(state === 'off') {
-              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-brand-card text-gray-600 dark:text-gray-300 text-xs font-bold hover:bg-gray-200 transition";
-          } else {
-              btn.className = "tajvid-btn px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-xs font-bold transition";
-          }
-      });
-  });
-</script>
+    });
+  </script>
 </body>
 </html>

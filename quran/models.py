@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 class AyahMemorization(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hifz_progress')
@@ -35,3 +36,9 @@ class AyahMemorization(models.Model):
     # Shaxsiy audio yuklash uchun (YANGI)
     custom_audio = models.FileField(upload_to='custom_audios/', null=True, blank=True)
     custom_audio_title = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Hifz Test (Spaced Repetition) maydonlari
+    interval = models.IntegerField(default=0)
+    ease_factor = models.FloatField(default=2.5)
+    next_review_date = models.DateField(default=timezone.now)
+    failed_attempts = models.IntegerField(default=0)
